@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 # Enable CUDA for this directory
 enable_language(CUDA)
 
-# Create the reverse array executable
+# Create the matrix transpose executable
 add_executable(matrix_transpose matrix_transpose.cpp)
 
 # Set required CUDA properties and flags
