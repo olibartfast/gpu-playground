@@ -79,7 +79,6 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 
 ### GPU Programming Communities
 * [GPU Mode GitHub](https://github.com/gpu-mode)
-* [reference-kernels](https://github.com/gpu-mode/reference-kernels)
 * [LeetGPU](https://leetgpu.com)
 
 ### Frameworks and Libraries
@@ -101,6 +100,7 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 * [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile) - cuTile Python programming language for GPUs
 
 ### Other Resources
+* [reference-kernels](https://github.com/gpu-mode/reference-kernels) - This repo holds reference kernels for the KernelBot which hosts regular competitions on [discord.gg/gpumode](discord.gg/gpumode)
 * [Mojo Documentation](https://docs.modular.com/mojo)
 * [Modular CUDA Setup Guide](https://www.modular.com/mojo)
 * [AI CUDA Engineer: Official Paper and Leaderboard](https://pub.sakana.ai/ai-cuda-engineer)
