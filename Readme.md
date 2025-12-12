@@ -69,6 +69,7 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 - `silu/` - SiLU (Swish) activation function
 - `swiglu/` - SwiGLU activation function
 - `gemm/` - General Matrix Multiplication (GEMM) with tiled optimization
+- `spmv/` - Sparse Matrix-Vector Multiplication with multiple kernel strategies
 - other examples incoming, **currently only pure CUDA implementations**...
 
 ## Examples
