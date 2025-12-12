@@ -73,7 +73,7 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 
 ## Examples
 
-For detailed code examples and benchmarks using different frameworks, see [EXAMPLES.md](EXAMPLES.md).
+For detailed code examples and benchmarks using different frameworks, see [EXAMPLES.md](https://github.com/olibartfast/gpu-playground/blob/master/docs/EXAMPLES.md).
 
 ## Further Resources and References
 
