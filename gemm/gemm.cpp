@@ -9,12 +9,11 @@
  * - Map: Each thread computes one (or more) output elements
  * - Reduction: Accumulating partial products along K dimension
  * 
- * Precision: FP16 storage, FP32 accumulation
+ * Precision: FP32
  */
 
 #include <stdio.h>
 #include <cuda_runtime.h>
-#include <cuda_fp16.h>
 #include <sys/time.h>
 #include <cmath>
 #include <cstdlib>
@@ -46,7 +45,7 @@ double getTime() {
  * 
  * Pattern: Tiled Partitioning + Map + Reduction
  */
-__global__ void gemmTiled(const half* A, const half* B, half* C,
+__global__ void gemmTiled(const float* A, const float* B, float* C,
                            float alpha, float beta,
                            int M, int N, int K) {
     // Shared memory for tiles
@@ -71,7 +70,7 @@ __global__ void gemmTiled(const half* A, const half* B, half* C,
         // Load tile of A into shared memory
         int aCol = t * TILE_SIZE + tx;
         if (row < M && aCol < K) {
-            As[ty][tx] = __half2float(A[row * K + aCol]);
+            As[ty][tx] = A[row * K + aCol];
         } else {
             As[ty][tx] = 0.0f;
         }
@@ -79,7 +78,7 @@ __global__ void gemmTiled(const half* A, const half* B, half* C,
         // Load tile of B into shared memory
         int bRow = t * TILE_SIZE + ty;
         if (bRow < K && col < N) {
-            Bs[ty][tx] = __half2float(B[bRow * N + col]);
+            Bs[ty][tx] = B[bRow * N + col];
         } else {
             Bs[ty][tx] = 0.0f;
         }
@@ -99,9 +98,9 @@ __global__ void gemmTiled(const half* A, const half* B, half* C,
     
     // Write result: C = α * (A * B) + β * C
     if (row < M && col < N) {
-        float c_val = __half2float(C[row * N + col]);
+        float c_val = C[row * N + col];
         float result = alpha * sum + beta * c_val;
-        C[row * N + col] = __float2half(result);
+        C[row * N + col] = result;
     }
 }
 
@@ -116,7 +115,7 @@ __global__ void gemmTiled(const half* A, const half* B, half* C,
 #define TILE_K 16
 #define THREAD_TILE 2
 
-__global__ void gemmTiled2x2(const half* A, const half* B, half* C,
+__global__ void gemmTiled2x2(const float* A, const float* B, float* C,
                               float alpha, float beta,
                               int M, int N, int K) {
     __shared__ float As[TILE_K][TILE_M];
@@ -141,7 +140,7 @@ __global__ void gemmTiled2x2(const half* A, const half* B, half* C,
             int row = rowBase + i;
             int col = t * TILE_K + tx;
             if (row < M && col < K) {
-                As[tx][ty * THREAD_TILE + i] = __half2float(A[row * K + col]);
+                As[tx][ty * THREAD_TILE + i] = A[row * K + col];
             } else {
                 As[tx][ty * THREAD_TILE + i] = 0.0f;
             }
@@ -152,7 +151,7 @@ __global__ void gemmTiled2x2(const half* A, const half* B, half* C,
             int row = t * TILE_K + ty;
             int col = colBase + i;
             if (row < K && col < N) {
-                Bs[ty][tx * THREAD_TILE + i] = __half2float(B[row * N + col]);
+                Bs[ty][tx * THREAD_TILE + i] = B[row * N + col];
             } else {
                 Bs[ty][tx * THREAD_TILE + i] = 0.0f;
             }
@@ -185,9 +184,9 @@ __global__ void gemmTiled2x2(const half* A, const half* B, half* C,
             int row = rowBase + i;
             int col = colBase + j;
             if (row < M && col < N) {
-                float c_val = __half2float(C[row * N + col]);
+                float c_val = C[row * N + col];
                 float result = alpha * sum[i][j] + beta * c_val;
-                C[row * N + col] = __float2half(result);
+                C[row * N + col] = result;
             }
         }
     }
@@ -196,7 +195,7 @@ __global__ void gemmTiled2x2(const half* A, const half* B, half* C,
 /**
  * Kernel 3: Optimized with vectorized loads and better memory coalescing
  */
-__global__ void gemmOptimized(const half* A, const half* B, half* C,
+__global__ void gemmOptimized(const float* A, const float* B, float* C,
                                float alpha, float beta,
                                int M, int N, int K) {
     __shared__ float As[TILE_SIZE][TILE_SIZE + 1];  // +1 to avoid bank conflicts
@@ -211,8 +210,8 @@ __global__ void gemmOptimized(const half* A, const half* B, half* C,
     float sum = 0.0f;
     
     // Precompute base pointers
-    const half* A_row = A + row * K;
-    const half* B_col = B + col;
+    const float* A_row = A + row * K;
+    const float* B_col = B + col;
     
     int numTiles = (K + TILE_SIZE - 1) / TILE_SIZE;
     
@@ -221,11 +220,11 @@ __global__ void gemmOptimized(const half* A, const half* B, half* C,
         
         // Coalesced load of A (row-major, consecutive threads read consecutive elements)
         int aIdx = tileOffset + tx;
-        As[ty][tx] = (row < M && aIdx < K) ? __half2float(A_row[aIdx]) : 0.0f;
+        As[ty][tx] = (row < M && aIdx < K) ? A_row[aIdx] : 0.0f;
         
         // Coalesced load of B
         int bIdx = (tileOffset + ty) * N;
-        Bs[ty][tx] = (tileOffset + ty < K && col < N) ? __half2float(B_col[bIdx]) : 0.0f;
+        Bs[ty][tx] = (tileOffset + ty < K && col < N) ? B_col[bIdx] : 0.0f;
         
         __syncthreads();
         
@@ -240,34 +239,34 @@ __global__ void gemmOptimized(const half* A, const half* B, half* C,
     
     // Write result with FMA
     if (row < M && col < N) {
-        float c_val = __half2float(C[row * N + col]);
-        C[row * N + col] = __float2half(fmaf(alpha, sum, beta * c_val));
+        float c_val = C[row * N + col];
+        C[row * N + col] = fmaf(alpha, sum, beta * c_val);
     }
 }
 
 // CPU matrix multiplication reference
-void gemmCpu(const half* A, const half* B, half* C,
+void gemmCpu(const float* A, const float* B, float* C,
              float alpha, float beta,
              int M, int N, int K) {
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
             float sum = 0.0f;
             for (int k = 0; k < K; k++) {
-                sum += __half2float(A[i * K + k]) * __half2float(B[k * N + j]);
+                sum += A[i * K + k] * B[k * N + j];
             }
-            float c_val = __half2float(C[i * N + j]);
-            C[i * N + j] = __float2half(alpha * sum + beta * c_val);
+            float c_val = C[i * N + j];
+            C[i * N + j] = alpha * sum + beta * c_val;
         }
     }
 }
 
 // Function to print a matrix
-void printMatrix(const half* matrix, int rows, int cols, const char* name) {
+void printMatrix(const float* matrix, int rows, int cols, const char* name) {
     printf("%s:\n", name);
     for (int i = 0; i < rows && i < 4; i++) {
         printf("  [");
         for (int j = 0; j < cols && j < 4; j++) {
-            printf("%8.2f", __half2float(matrix[i * cols + j]));
+            printf("%8.2f", matrix[i * cols + j]);
         }
         if (cols > 4) printf(" ...");
         printf(" ]\n");
@@ -277,14 +276,14 @@ void printMatrix(const half* matrix, int rows, int cols, const char* name) {
 }
 
 // Function to compare CPU and GPU results
-int compareResults(const half* cpu_C, const half* gpu_C, int size, float tolerance = 0.1f) {
+int compareResults(const float* cpu_C, const float* gpu_C, int size, float tolerance = 0.1f) {
     float maxDiff = 0.0f;
     float maxRelDiff = 0.0f;
     int mismatches = 0;
     
     for (int i = 0; i < size; i++) {
-        float cpu_val = __half2float(cpu_C[i]);
-        float gpu_val = __half2float(gpu_C[i]);
+        float cpu_val = cpu_C[i];
+        float gpu_val = gpu_C[i];
         float diff = fabsf(cpu_val - gpu_val);
         float rel = diff / (fabsf(cpu_val) + 1e-6f);
         
@@ -326,17 +325,17 @@ int main() {
     const int M1 = 2, K1 = 3, N1 = 2;
     float alpha1 = 1.0f, beta1 = 0.0f;
     
-    half h_A1[] = {__float2half(1), __float2half(2), __float2half(3),
-                   __float2half(4), __float2half(5), __float2half(6)};
-    half h_B1[] = {__float2half(7), __float2half(8),
-                   __float2half(9), __float2half(10),
-                   __float2half(11), __float2half(12)};
-    half h_C1_cpu[4], h_C1_gpu[4];
+    float h_A1[] = {1.0f, 2.0f, 3.0f,
+                    4.0f, 5.0f, 6.0f};
+    float h_B1[] = {7.0f, 8.0f,
+                    9.0f, 10.0f,
+                    11.0f, 12.0f};
+    float h_C1_cpu[4], h_C1_gpu[4];
     
     // Initialize C matrices to 0
     for (int i = 0; i < 4; i++) {
-        h_C1_cpu[i] = __float2half(0);
-        h_C1_gpu[i] = __float2half(0);
+        h_C1_cpu[i] = 0.0f;
+        h_C1_gpu[i] = 0.0f;
     }
     
     printMatrix(h_A1, M1, K1, "Matrix A (2x3)");
@@ -350,14 +349,14 @@ int main() {
     double cpu_time = end_cpu - start_cpu;
     
     // GPU computation
-    half *d_A1, *d_B1, *d_C1;
-    CUDA_CHECK(cudaMalloc(&d_A1, M1 * K1 * sizeof(half)));
-    CUDA_CHECK(cudaMalloc(&d_B1, K1 * N1 * sizeof(half)));
-    CUDA_CHECK(cudaMalloc(&d_C1, M1 * N1 * sizeof(half)));
+    float *d_A1, *d_B1, *d_C1;
+    CUDA_CHECK(cudaMalloc(&d_A1, M1 * K1 * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_B1, K1 * N1 * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_C1, M1 * N1 * sizeof(float)));
     
-    CUDA_CHECK(cudaMemcpy(d_A1, h_A1, M1 * K1 * sizeof(half), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_B1, h_B1, K1 * N1 * sizeof(half), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_C1, h_C1_gpu, M1 * N1 * sizeof(half), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_A1, h_A1, M1 * K1 * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_B1, h_B1, K1 * N1 * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_C1, h_C1_gpu, M1 * N1 * sizeof(float), cudaMemcpyHostToDevice));
     
     // Create CUDA events for timing
     cudaEvent_t start, stop;
@@ -377,7 +376,7 @@ int main() {
     CUDA_CHECK(cudaEventElapsedTime(&gpu_time_ms, start, stop));
     double gpu_time = gpu_time_ms / 1000.0;
     
-    CUDA_CHECK(cudaMemcpy(h_C1_gpu, d_C1, M1 * N1 * sizeof(half), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(h_C1_gpu, d_C1, M1 * N1 * sizeof(float), cudaMemcpyDeviceToHost));
     
     printMatrix(h_C1_cpu, M1, N1, "Matrix C (CPU Result)");
     printMatrix(h_C1_gpu, M1, N1, "Matrix C (GPU Result)");
@@ -410,23 +409,23 @@ int main() {
     const int M2 = 512, K2 = 256, N2 = 512;
     float alpha2 = 1.5f, beta2 = 0.5f;
     
-    half* h_A2 = new half[M2 * K2];
-    half* h_B2 = new half[K2 * N2];
-    half* h_C2_cpu = new half[M2 * N2];
-    half* h_C2_gpu = new half[M2 * N2];
+    float* h_A2 = new float[M2 * K2];
+    float* h_B2 = new float[K2 * N2];
+    float* h_C2_cpu = new float[M2 * N2];
+    float* h_C2_gpu = new float[M2 * N2];
     
     // Initialize with random values
     srand(42);
     for (int i = 0; i < M2 * K2; i++) {
-        h_A2[i] = __float2half((float)(rand() % 100) / 50.0f - 1.0f);
+        h_A2[i] = (float)(rand() % 100) / 50.0f - 1.0f;
     }
     for (int i = 0; i < K2 * N2; i++) {
-        h_B2[i] = __float2half((float)(rand() % 100) / 50.0f - 1.0f);
+        h_B2[i] = (float)(rand() % 100) / 50.0f - 1.0f;
     }
     for (int i = 0; i < M2 * N2; i++) {
         float val = (float)(rand() % 100) / 50.0f - 1.0f;
-        h_C2_cpu[i] = __float2half(val);
-        h_C2_gpu[i] = __float2half(val);
+        h_C2_cpu[i] = val;
+        h_C2_gpu[i] = val;
     }
     
     printf("M=%d, K=%d, N=%d\n", M2, K2, N2);
@@ -439,14 +438,14 @@ int main() {
     cpu_time = end_cpu - start_cpu;
     
     // GPU computation
-    half *d_A2, *d_B2, *d_C2;
-    CUDA_CHECK(cudaMalloc(&d_A2, M2 * K2 * sizeof(half)));
-    CUDA_CHECK(cudaMalloc(&d_B2, K2 * N2 * sizeof(half)));
-    CUDA_CHECK(cudaMalloc(&d_C2, M2 * N2 * sizeof(half)));
+    float *d_A2, *d_B2, *d_C2;
+    CUDA_CHECK(cudaMalloc(&d_A2, M2 * K2 * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_B2, K2 * N2 * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_C2, M2 * N2 * sizeof(float)));
     
-    CUDA_CHECK(cudaMemcpy(d_A2, h_A2, M2 * K2 * sizeof(half), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_B2, h_B2, K2 * N2 * sizeof(half), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_C2, h_C2_gpu, M2 * N2 * sizeof(half), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_A2, h_A2, M2 * K2 * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_B2, h_B2, K2 * N2 * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_C2, h_C2_gpu, M2 * N2 * sizeof(float), cudaMemcpyHostToDevice));
     
     dim3 blockDim2(TILE_SIZE, TILE_SIZE);
     dim3 gridDim2((N2 + TILE_SIZE - 1) / TILE_SIZE, (M2 + TILE_SIZE - 1) / TILE_SIZE);
@@ -460,7 +459,7 @@ int main() {
     CUDA_CHECK(cudaEventElapsedTime(&gpu_time_ms, start, stop));
     gpu_time = gpu_time_ms / 1000.0;
     
-    CUDA_CHECK(cudaMemcpy(h_C2_gpu, d_C2, M2 * N2 * sizeof(half), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(h_C2_gpu, d_C2, M2 * N2 * sizeof(float), cudaMemcpyDeviceToHost));
     
     printMatrix(h_C2_cpu, M2, N2, "Matrix C (CPU Result) - First 4x4");
     printMatrix(h_C2_gpu, M2, N2, "Matrix C (GPU Result) - First 4x4");
