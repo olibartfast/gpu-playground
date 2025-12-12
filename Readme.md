@@ -1,4 +1,4 @@
-# GPU Testing 
+# GPU playground 
 
 This repository contains examples and utilities for GPU programming experimenting mainly with Python, C++ and other gpu computing libraries. The examples are inspired by resources from the GPU Mode Group and LeetGPU site.
 
