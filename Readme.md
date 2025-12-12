@@ -1,4 +1,4 @@
-# GPU Testing 
+# GPU playground 
 
 This repository contains examples and utilities for GPU programming experimenting mainly with Python, C++ and other gpu computing libraries. The examples are inspired by resources from the GPU Mode Group and LeetGPU site.
 
@@ -74,7 +74,7 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 
 ## Examples
 
-For detailed code examples and benchmarks using different frameworks, see [EXAMPLES.md](EXAMPLES.md).
+For detailed code examples and benchmarks using different frameworks, see [EXAMPLES.md](https://github.com/olibartfast/gpu-playground/blob/master/docs/EXAMPLES.md).
 
 ## Further Resources and References
 
@@ -101,6 +101,7 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 * [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile) - cuTile Python programming language for GPUs
 
 ### Other Resources
+* [reference-kernels](https://github.com/gpu-mode/reference-kernels) - This repo holds reference kernels for the KernelBot which hosts regular competitions on [discord.gg/gpumode](discord.gg/gpumode)
 * [Mojo Documentation](https://docs.modular.com/mojo)
 * [Modular CUDA Setup Guide](https://www.modular.com/mojo)
 * [AI CUDA Engineer: Official Paper and Leaderboard](https://pub.sakana.ai/ai-cuda-engineer)
