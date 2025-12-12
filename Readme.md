@@ -79,6 +79,7 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 
 ### GPU Programming Communities
 * [GPU Mode GitHub](https://github.com/gpu-mode)
+* [reference-kernels](https://github.com/gpu-mode/reference-kernels)
 * [LeetGPU](https://leetgpu.com)
 
 ### Frameworks and Libraries
