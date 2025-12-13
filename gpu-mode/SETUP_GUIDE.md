@@ -376,7 +376,7 @@ rm ~/.popcorn.yaml
 
 # Re-register
 cd ~/$WORKSPACE/popcorn-cli
-./target/release/popcorn-cli register discord
+./target/release/popcorn-cli register discord (or ./target/release/popcorn-cli reregister discord)
 
 # Verify
 cat ~/.popcorn.yaml
