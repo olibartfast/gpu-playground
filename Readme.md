@@ -106,6 +106,7 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 * [Modular CUDA Setup Guide](https://www.modular.com/mojo)
 * [AI CUDA Engineer: Official Paper and Leaderboard](https://pub.sakana.ai/ai-cuda-engineer)
 * [AI CUDA Engineer: Dataset](https://huggingface.co/datasets/SakanaAI/AI-CUDA-Engineer-Archive)
+* [Course on CUDA programming at Oxford Mathematical Institute](https://people.maths.ox.ac.uk/~gilesm/cuda/)
 
 
 
