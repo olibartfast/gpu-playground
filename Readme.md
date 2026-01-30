@@ -80,15 +80,37 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 - CUTLASS 4.x introduces **CuTe DSL** - Python interface for writing CUDA kernels without C++ complexity
 
 ## Project Structure
+
+### Kernel Implementations
 - `reverse_array/` - Array reversal examples
 - `prefix_sum/` - Parallel prefix sum (scan) implementations
 - `matrix_transpose/` - Matrix transpose with shared memory optimization
+- `matrix_mul/` - Basic matrix multiplication (C++ implementation)
+- `gemm/` - General Matrix Multiplication (GEMM) with tiled optimization
+- `spmv/` - Sparse Matrix-Vector Multiplication with multiple kernel strategies
 - `softmax/` - Softmax activation function
 - `silu/` - SiLU (Swish) activation function
 - `swiglu/` - SwiGLU activation function
-- `gemm/` - General Matrix Multiplication (GEMM) with tiled optimization
-- `spmv/` - Sparse Matrix-Vector Multiplication with multiple kernel strategies
-- other examples incoming, **currently only pure CUDA implementations**...
+
+**Note:** Currently only pure CUDA implementations are available; other framework examples are planned.
+
+### GPU MODE Competition
+- `gpu-mode/` - GPU MODE kernel competition tools and submissions
+  - `SETUP_GUIDE.md` - Complete guide for participating in GPU MODE competitions
+  - `tools/` - Helper scripts for setup, submission, and quick reference
+  - `submissions/` - Example kernel submissions (e.g., NVFP4 GEMM baseline)
+
+### Documentation
+- `docs/` - Development guidelines and best practices
+  - `EXAMPLES.md` - Detailed code examples and benchmarks
+  - `cuda-copilot-rules.md` - CUDA programming rules for AI coding assistants
+  - `cuda_best_practices_guide.md` - CUDA best practices and common pitfalls
+
+### Development Tools
+- `.devcontainer/` - Docker-based CUDA development environment (VS Code)
+- `cuda_perf_analysis.sh` - General-purpose CUDA performance analysis script
+- `tests/` - Test infrastructure (WIP)
+- `utils/` - Utility functions (WIP)
 
 ## Examples
 
