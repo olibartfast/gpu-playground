@@ -1,0 +1,54 @@
+{
+  "name": "CUDA Development Environment",
+  "image": "nvcr.io/nvidia/cuda:13.0.0-devel-ubuntu24.04",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    }
+  },
+
+  "runArgs": [
+    "--gpus=all",
+    "--shm-size=1g"
+  ],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cmake-tools",
+        "nvidia.nsight-vscode-edition",
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "cmake.configureOnOpen": true,
+        "C_Cpp.default.compilerPath": "/usr/local/cuda/bin/nvcc",
+        "C_Cpp.default.includePath": [
+          "/usr/local/cuda/include",
+          "/usr/include",
+          "/usr/local/include"
+        ]
+      }
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "remoteUser": "root",
+
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ],
+
+  "workspaceFolder": "/workspace"
+}
