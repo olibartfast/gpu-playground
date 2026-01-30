@@ -1,6 +1,24 @@
-# GPU playground 
+# GPU Playground
 
-This repository contains examples and utilities for GPU programming experimenting mainly with Python, C++ and other gpu computing libraries. The examples are inspired by resources from the GPU Mode Group and LeetGPU site.
+This repository contains examples and utilities for GPU programming experimenting mainly with Python, C++ and other GPU computing libraries. The examples are inspired by resources from the GPU Mode Group and LeetGPU site.
+
+## Quick Start
+
+### Using Dev Container (Recommended)
+
+The easiest way to get started is using the pre-configured development container:
+
+1. **Prerequisites:**
+   - Docker with NVIDIA Container Toolkit installed
+   - VS Code with Dev Containers extension
+   - NVIDIA GPU with drivers installed on host
+
+2. **Launch:**
+   - Open this repository in VS Code
+   - Click "Reopen in Container" when prompted
+   - The container will automatically set up CUDA 13.0 development environment
+
+For detailed devcontainer setup instructions, see [.devcontainer/README.md](.devcontainer/README.md).
 
 ## Prerequisites
 
