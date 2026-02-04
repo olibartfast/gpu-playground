@@ -5,6 +5,31 @@
 #include <iomanip>
 #include <vector>
 
+// Sigmoid Linear Unit / Swish
+/**
+ * @brief Computes the SiLU (Sigmoid Linear Unit) activation, also known as Swish.
+ *
+ * SiLU is a smooth, non-monotonic activation function often used in modern
+ * deep learning architectures (e.g., EfficientNet, YOLO) as an alternative to ReLU.
+ *
+ * Formula:
+ *     f(x) = x * sigmoid(x)
+ *     f(x) = x / (1.0 + exp(-x))
+ *
+ * Characteristics:
+ *   - Smooth: Differentiable everywhere (unlike ReLU).
+ *   - Non-monotonic: Dips slightly below 0 for small negative values, allowing
+ *     better gradient flow for "dead neurons."
+ *   - Unbounded above: Avoids saturation for large positive values.
+ *   - Bounded below: Regularizes large negative values towards 0.
+ *
+ * Derivative (for backpropagation):
+ *     f'(x) = f(x) + sigmoid(x) * (1 - f(x))
+ *
+ * @param x The input value (scalar or tensor element).
+ * @return The activated value.
+ */
+
 #define BSIZE 256
 
 void silu(const float* d_input, float* d_output, int N);
