@@ -7,7 +7,7 @@ enable_language(CUDA)
 # Set CUDA language property for source files
 set_source_files_properties(prefix_sum.cpp PROPERTIES LANGUAGE CUDA)
 
-# Create the reverse array executable
+# Create the prefix_sum executable
 add_executable(prefix_sum prefix_sum.cpp)
 
 # Set required CUDA properties and flags

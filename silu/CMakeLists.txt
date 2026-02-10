@@ -6,7 +6,7 @@ enable_language(CUDA)
 # Set CUDA language property for source files
 set_source_files_properties(silu.cpp PROPERTIES LANGUAGE CUDA)
 
-# Create the silu array executable
+# Create the silu executable
 add_executable(silu silu.cpp)
 
 # Set required CUDA properties and flags

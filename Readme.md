@@ -79,20 +79,59 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 - For Hopper (SM90a) and Blackwell (SM100a), use architecture-accelerated targets (note the "a" suffix)
 - CUTLASS 4.x introduces **CuTe DSL** - Python interface for writing CUDA kernels without C++ complexity
 
+## Building the Projects
+
+This project uses CMake to manage the build process for all CUDA kernels.
+
+### Prerequisites for C++:
+- CUDA Toolkit installed (see [Dev Container](#using-dev-container-recommended) for a pre-configured environment)
+- CMake 3.20+
+- A C++17 compatible compiler (e.g., GCC 9+)
+
+### Build all projects:
+
+```bash
+mkdir -p build && cd build
+cmake ..
+cmake --build . -j$(nproc)
+```
+
+By default, this builds for **Tesla T4 (Compute Capability 7.0)**. To build for a different architecture (e.g., RTX 3080/Ampere = 86), use:
+
+```bash
+cmake -DCMAKE_CUDA_ARCHITECTURES=86 ..
+cmake --build . -j$(nproc)
+```
+
+### Build a specific project:
+
+To build only one specific kernel (e.g., `gemm`), you can specify the target:
+
+```bash
+mkdir -p build && cd build
+cmake ..
+cmake --build . --target gemm
+```
+
+The compiled binaries will be located in their respective subdirectories under `build/` (e.g., `build/gemm/gemm`).
+
 ## Project Structure
 
 ### Kernel Implementations
-- `reverse_array/` - Array reversal examples
-- `prefix_sum/` - Parallel prefix sum (scan) implementations
-- `matrix_transpose/` - Matrix transpose with shared memory optimization
-- `matrix_mul/` - Basic matrix multiplication (C++ implementation)
-- `gemm/` - General Matrix Multiplication (GEMM) with tiled optimization
-- `spmv/` - Sparse Matrix-Vector Multiplication with multiple kernel strategies
+Each directory below contains a standalone CUDA implementation and its own `CMakeLists.txt`.
+
+- `reverse_array/` - Simple array reversal
+- `prefix_sum/` - Parallel prefix sum (scan)
+- `matrix_transpose/` - Optimized matrix transpose using shared memory
+- `matrix_mul/` - Basic tiled matrix multiplication
+- `gemm/` - General Matrix Multiplication with advanced tiling
+- `spmv/` - Sparse Matrix-Vector Multiplication
 - `softmax/` - Softmax activation function
+- `geglu/` - Gated Linear Unit with GELU activation
 - `silu/` - SiLU (Swish) activation function
 - `swiglu/` - SwiGLU activation function
-
-**Note:** Currently only pure CUDA implementations are available; other framework examples are planned.
+- `interleave_arrays/` - Array interleaving (AoS to SoA patterns)
+- `value_clipping/` - Element-wise value clipping
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
