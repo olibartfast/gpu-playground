@@ -1,24 +1,22 @@
 cmake_minimum_required(VERSION 3.20)
 
+# Enable CUDA for this directory
 enable_language(CUDA)
 
+# Set CUDA language property for source files
 set_source_files_properties(geglu.cpp PROPERTIES LANGUAGE CUDA)
 
+# Create the geglu executable
 add_executable(geglu geglu.cpp)
 
-# Let CMake handle architecture detection automatically
-# If not set, CMake 3.23+ will detect the GPU on the build machine
-# For older CMake or to compile for multiple architectures, uncomment:
-# set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
-
-# Or use special values:
-# set(CMAKE_CUDA_ARCHITECTURES native)  # Detect current GPU
-# set(CMAKE_CUDA_ARCHITECTURES all)     # All architectures (slow build)
-# set(CMAKE_CUDA_ARCHITECTURES all-major)  # Major versions only
-
+# Set required CUDA properties and flags
 set_target_properties(geglu PROPERTIES 
     CUDA_SEPARABLE_COMPILATION ON
-    CXX_STANDARD 17)
+    CUDA_ARCHITECTURES 70)  # For Tesla T4 GPU
+
+# Set C++ standard
+set_property(TARGET geglu PROPERTY CXX_STANDARD 17)
+
 
 # check also
 # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html

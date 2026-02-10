@@ -6,7 +6,7 @@ enable_language(CUDA)
 # Set CUDA language property for source files
 set_source_files_properties(swiglu.cpp PROPERTIES LANGUAGE CUDA)
 
-# Create the swiglu array executable
+# Create the swiglu executable
 add_executable(swiglu swiglu.cpp)
 
 # Set required CUDA properties and flags

@@ -6,7 +6,7 @@ enable_language(CUDA)
 # Set CUDA language property for source files
 set_source_files_properties(softmax.cpp PROPERTIES LANGUAGE CUDA)
 
-# Create the softmax array executable
+# Create the softmax executable
 add_executable(softmax softmax.cpp)
 
 # Set required CUDA properties and flags

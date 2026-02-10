@@ -1,19 +1,18 @@
-
 cmake_minimum_required(VERSION 3.20)
 
 # Enable CUDA for this directory
 enable_language(CUDA)
 
 # Set CUDA language property for source files
-set_source_files_properties(prefix_sum.cpp PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(clip.cpp PROPERTIES LANGUAGE CUDA)
 
-# Create the prefix_sum executable
-add_executable(prefix_sum prefix_sum.cpp)
+# Create the value_clipping executable
+add_executable(value_clipping clip.cpp)
 
 # Set required CUDA properties and flags
-set_target_properties(prefix_sum PROPERTIES 
+set_target_properties(value_clipping PROPERTIES 
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_ARCHITECTURES 70)  # For Tesla T4 GPU
 
 # Set C++ standard
-set_property(TARGET prefix_sum PROPERTY CXX_STANDARD 17)
+set_property(TARGET value_clipping PROPERTY CXX_STANDARD 17)
