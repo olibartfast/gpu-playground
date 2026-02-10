@@ -24,7 +24,7 @@ For detailed devcontainer setup instructions, see [.devcontainer/README.md](.dev
 
 To test all the below frameworks ensure the following tools are installed:
 
-- CUDA Toolkit 13.1+ (required for CUDA Tile, CUTLASS CuTe DSL; also for Python, C++, and Mojo development)
+- CUDA Toolkit 13.0+ (required for CUDA Tile, CUTLASS CuTe DSL; also for Python, C++, and Mojo development)
   - For CUDA Tile: Requires NVIDIA Driver r580 or later and Blackwell GPU (13.1 release)
   - For CUTLASS: Can be built from source or installed via package manager
 - PyTorch or TensorFlow (for Python-based GPU testing)
@@ -103,6 +103,8 @@ cmake -DCMAKE_CUDA_ARCHITECTURES=86 ..
 cmake --build . -j$(nproc)
 ```
 
+See the root `CMakeLists.txt` for additional architecture configuration options and best practices.
+
 ### Build a specific project:
 
 To build only one specific kernel (e.g., `gemm`), you can specify the target:
@@ -180,14 +182,10 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 * [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile) - cuTile Python programming language for GPUs
 
 ### Other Resources
-* [reference-kernels](https://github.com/gpu-mode/reference-kernels) - This repo holds reference kernels for the KernelBot which hosts regular competitions on [discord.gg/gpumode](discord.gg/gpumode)
+* [reference-kernels](https://github.com/gpu-mode/reference-kernels) - This repo holds reference kernels for the KernelBot which hosts regular competitions on [discord.gg/gpumode](https://discord.gg/gpumode)
 * [Mojo Documentation](https://docs.modular.com/mojo)
 * [Modular CUDA Setup Guide](https://www.modular.com/mojo)
 * [AI CUDA Engineer: Official Paper and Leaderboard](https://pub.sakana.ai/ai-cuda-engineer)
 * [AI CUDA Engineer: Dataset](https://huggingface.co/datasets/SakanaAI/AI-CUDA-Engineer-Archive)
 * [Course on CUDA programming at Oxford Mathematical Institute](https://people.maths.ox.ac.uk/~gilesm/cuda/)
-
-
-
-
 
