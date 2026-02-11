@@ -109,6 +109,7 @@ import triton.language as tl
 @triton.jit
 def matmul_kernel(
     a_ptr, b_ptr, c_ptr, M, N, K,
+    stride_am, stride_ak, stride_bk, stride_bn, stride_cm, stride_cn,
     BLOCK_SIZE_M: tl.constexpr, BLOCK_SIZE_N: tl.constexpr, BLOCK_SIZE_K: tl.constexpr,
 ):
     pid = tl.program_id(axis=0)
@@ -116,29 +117,41 @@ def matmul_kernel(
     num_pid_n = tl.cdiv(N, BLOCK_SIZE_N)
     pid_m = pid // num_pid_n
     pid_n = pid % num_pid_n
-    m_start = pid_m * BLOCK_SIZE_M
-    n_start = pid_n * BLOCK_SIZE_N
-    a_ptrs = a_ptr + m_start * K + tl.arange(0, BLOCK_SIZE_M)[:, None] * K + tl.arange(0, BLOCK_SIZE_K)[None, :]
-    b_ptrs = b_ptr + tl.arange(0, BLOCK_SIZE_K)[:, None] * N + n_start + tl.arange(0, BLOCK_SIZE_N)[None, :]
-    c_ptrs = c_ptr + m_start * N + n_start + tl.arange(0, BLOCK_SIZE_M)[:, None] * N + tl.arange(0, BLOCK_SIZE_N)[None, :]
+
+    offs_m = pid_m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
+    offs_n = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
+    offs_k = tl.arange(0, BLOCK_SIZE_K)
+
+    a_ptrs = a_ptr + offs_m[:, None] * stride_am + offs_k[None, :] * stride_ak
+    b_ptrs = b_ptr + offs_k[:, None] * stride_bk + offs_n[None, :] * stride_bn
+
     acc = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
     for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-        a = tl.load(a_ptrs)
-        b = tl.load(b_ptrs)
+        # Boundary checks for non-aligned sizes
+        a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_SIZE_K, other=0.0)
+        b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_SIZE_K, other=0.0)
         acc += tl.dot(a, b)
-        a_ptrs += BLOCK_SIZE_K
-        b_ptrs += BLOCK_SIZE_K * N
-    tl.store(c_ptrs, acc)
+        a_ptrs += BLOCK_SIZE_K * stride_ak
+        b_ptrs += BLOCK_SIZE_K * stride_bk
+
+    # Store with boundary check
+    c_ptrs = c_ptr + offs_m[:, None] * stride_cm + offs_n[None, :] * stride_cn
+    c_mask = (offs_m[:, None] < M) & (offs_n[None, :] < N)
+    tl.store(c_ptrs, acc, mask=c_mask)
 
 def matmul(a, b):
     M, K = a.shape
-    K, N = b.shape
+    _, N = b.shape
     c = torch.empty((M, N), device=a.device, dtype=a.dtype)
     BLOCK_SIZE_M = 16
     BLOCK_SIZE_N = 16
     BLOCK_SIZE_K = 16
     grid = lambda META: (triton.cdiv(M, BLOCK_SIZE_M) * triton.cdiv(N, BLOCK_SIZE_N),)
-    matmul_kernel[grid](a, b, c, M, N, K, BLOCK_SIZE_M, BLOCK_SIZE_N, BLOCK_SIZE_K)
+    matmul_kernel[grid](
+        a, b, c, M, N, K,
+        a.stride(0), a.stride(1), b.stride(0), b.stride(1), c.stride(0), c.stride(1),
+        BLOCK_SIZE_M, BLOCK_SIZE_N, BLOCK_SIZE_K
+    )
     return c
 ```
 
@@ -193,9 +206,9 @@ for size in sizes:
     print("-" * 30)
 ```
 
-## Example 4: GPU Testing with Mojo
+## Example 4: GPU Testing with Mojo (Conceptual)
 
-> **Note:** Mojo requires a local environment with the Mojo SDK and CUDA installed. This code cannot run on Google Colab.
+> **Note:** This is a conceptual example showing potential Mojo GPU programming patterns. Mojo's GPU support is evolving, so syntax may differ from the current SDK. Mojo requires a local environment with the Mojo SDK installed. This code cannot run on Google Colab.
 
 ```mojo
 from math import div_ceil
