@@ -78,7 +78,7 @@ __global__ void reductionKernel(float* data, float* result) {
 
 ### 7. Occupancy Optimization
 - **Balance register usage**: Use `__launch_bounds__` to limit registers per thread
-- **Monitor shared memory usage**: Don't exceed 48KB per block
+- **Monitor shared memory usage**: Default is 48KB per block (up to 164KB on CC 8.0+ with opt-in)
 - **Aim for at least 50% occupancy** but remember higher isn't always better
 - **Use the occupancy calculator** or runtime API to tune launch parameters
 
@@ -186,13 +186,13 @@ void launchKernel(float* data, int n) {
 
 ## Advanced Optimization Techniques
 
-### Warp-Level Primitives (CC 3.0+)
+### Warp-Level Primitives (CC 7.0+)
 ```cuda
-// Use warp shuffle for intra-warp communication
+// Use warp shuffle for intra-warp communication (requires Volta+)
 int value = __shfl_sync(0xffffffff, data, srcLane);
 ```
 
-### Cooperative Groups (CC 3.5+)
+### Cooperative Groups (CC 6.0+)
 ```cuda
 #include <cooperative_groups.h>
 namespace cg = cooperative_groups;

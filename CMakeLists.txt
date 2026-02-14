@@ -15,6 +15,15 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 70)
 endif()
 
+# CUDA Architecture Best Practices:
+# - CMake 3.23+: Just don't set it at all, or use "native"
+# - CMake 3.18-3.22: Use "native" or specify a list
+# - For CI/distribution: Set explicit list like 70-real;75-real;80-real;86 to avoid PTX overhead
+# - Command line override: cmake -DCMAKE_CUDA_ARCHITECTURES="80;86" ..
+# - The -real suffix compiles actual binary code (SASS) instead of intermediate PTX,
+#   which is faster at runtime but produces larger binaries.
+# See: https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
+
 # Enable separable compilation globally for CUDA
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
