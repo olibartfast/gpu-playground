@@ -115,6 +115,10 @@ cmake --build . --target gemm
 
 The compiled binaries will be located in their respective subdirectories under `build/` (e.g., `build/gemm/gemm`).
 
+### Build on Google Colab
+
+You can also build and run the C++/CUDA kernels on Google Colab using a free GPU runtime. See the [Building on Google Colab](docs/building-on-google-colab.md) guide for full instructions.
+
 ## Project Structure
 
 ### Kernel Implementations
