@@ -142,6 +142,7 @@ Each directory below contains a standalone CUDA implementation and its own `CMak
 ### Documentation
 - `docs/` - Development guidelines and best practices
   - `EXAMPLES.md` - Detailed code examples and benchmarks
+  - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
   - `cuda-copilot-rules.md` - CUDA programming rules for AI coding assistants
   - `cuda_best_practices_guide.md` - CUDA best practices and common pitfalls
 
