@@ -1,0 +1,2 @@
+set_source_files_properties(rgb_to_grayscale.cpp PROPERTIES LANGUAGE CUDA)
+add_executable(rgb_to_grayscale rgb_to_grayscale.cpp)

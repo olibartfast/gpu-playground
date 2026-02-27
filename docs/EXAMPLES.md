@@ -4,14 +4,16 @@ This document contains practical examples of GPU programming using different lan
 
 ## Running on Google Colab
 
-Google Colab offers free GPU access for Python code with minimal setup:
+Google Colab offers free GPU access with minimal setup:
 
 1. Go to [Google Colab](https://colab.research.google.com).
 2. Open a new notebook.
 3. Enable GPU: `Runtime > Change runtime type > GPU`.
 4. Run Python snippets directly in Colab.
 
-> **Note:** Mojo and C++ code require a local environment, as Colab does not support them natively.
+C++ / CUDA code from this repository can also be built and run on Colab using the shell (`!` commands). See the [Building on Google Colab](building-on-google-colab.md) guide for full instructions.
+
+> **Note:** Mojo requires a local environment with the Mojo SDK installed, as Colab does not support it natively.
 
 ## Example 1: GPU Testing with Python (PyTorch)
 
@@ -208,7 +210,7 @@ for size in sizes:
 
 ## Example 4: GPU Testing with Mojo (Conceptual)
 
-> **Note:** This is a conceptual example showing potential Mojo GPU programming patterns. Mojo's GPU support is evolving, so syntax may differ from the current SDK. Mojo requires a local environment with the Mojo SDK installed. This code cannot run on Google Colab.
+> **Note:** This is a conceptual example showing potential Mojo GPU programming patterns. Mojo's GPU support is evolving, so syntax may differ from the current SDK. Mojo requires a local environment with the Mojo SDK installed. Unlike the C++/CUDA code in this repo, Mojo code cannot currently run on Google Colab.
 
 ```mojo
 from math import div_ceil
