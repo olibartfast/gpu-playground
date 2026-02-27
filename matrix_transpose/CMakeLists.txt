@@ -1,2 +1,0 @@
-set_source_files_properties(matrix_transpose.cpp PROPERTIES LANGUAGE CUDA)
-add_executable(matrix_transpose matrix_transpose.cpp)
