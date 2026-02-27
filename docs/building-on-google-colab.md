@@ -59,10 +59,48 @@ To build and run only a specific kernel (e.g., `softmax`):
 ```bash
 %cd /content/gpu-playground/build
 !cmake --build . --target softmax
-!./softmax/softmax
+!./source/softmax/softmax
 ```
 
-Available targets include: `reverse_array`, `prefix_sum`, `matrix_transpose`, `matrix_mul`, `gemm`, `spmv`, `softmax`, `geglu`, `silu`, `swiglu`, `interleave_arrays`, `value_clipping`.
+All compiled binaries are located under `build/source/<kernel>/<kernel>`:
+
+```bash
+# Examples
+!./source/gemm/gemm
+!./source/sigmoid/sigmoid
+!./source/softmax/softmax
+!./source/spmv/spmv
+```
+
+Available targets:
+
+| Target | Binary path |
+|--------|-------------|
+| `reverse_array` | `source/reverse_array/reverse_array` |
+| `prefix_sum` | `source/prefix_sum/prefix_sum` |
+| `matrix_transpose` | `source/matrix_transpose/matrix_transpose` |
+| `matrix_mul` | `source/matrix_mul/matrix_mul` |
+| `gemm` | `source/gemm/gemm` |
+| `sigmoid` | `source/sigmoid/sigmoid` |
+| `softmax` | `source/softmax/softmax` |
+| `spmv` | `source/spmv/spmv` |
+| `geglu` | `source/geglu/geglu` |
+| `silu` | `source/silu/silu` |
+| `swiglu` | `source/swiglu/swiglu` |
+| `interleave_arrays` | `source/interleave_arrays/interleave_arrays` |
+| `value_clipping` | `source/value_clipping/value_clipping` |
+| `rgb_to_grayscale` | `source/rgb_to_grayscale/rgb_to_grayscale` |
+
+## Disabling Specific Kernels
+
+To skip building certain kernels (e.g., to speed up the build):
+
+```bash
+!cmake .. -DCMAKE_CUDA_ARCHITECTURES=75 -DGPU_ENABLE_SPMV=OFF -DGPU_ENABLE_GEMM=OFF
+!cmake --build . -j$(nproc)
+```
+
+Each kernel has a `GPU_ENABLE_<KERNEL>` flag (all `ON` by default).
 
 ## Persisting Builds Across Sessions
 
@@ -80,7 +118,7 @@ drive.mount('/content/drive')
 !mkdir -p build && cd build && cmake .. -DCMAKE_CUDA_ARCHITECTURES=75 && cmake --build . -j$(nproc)
 ```
 
-> **Note:** Building on Google Drive is slower due to network filesystem overhead. An alternative approach is to keep the source on Drive and copy it to local `/content` for building.
+> **Note:** Building on Google Drive is slower due to network filesystem overhead. An alternative is to keep the source on Drive and copy it to local `/content` for building.
 
 ## Profiling (Optional)
 
@@ -94,10 +132,10 @@ If `ncu` is available:
 
 ```bash
 %cd /content/gpu-playground
-!bash cuda_perf_analysis.sh ./build/gemm/gemm
+!bash cuda_perf_analysis.sh ./build/source/gemm/gemm
 ```
 
-As an alternative, `nvprof` (legacy) or basic CUDA event timing within the kernels can be used for benchmarking.
+As an alternative, `nvprof` (legacy) or the CUDA event timing built into each kernel can be used for benchmarking.
 
 ## Troubleshooting
 

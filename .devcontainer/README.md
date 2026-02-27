@@ -59,13 +59,29 @@ nvcc --version
 
 ## Building CUDA Projects
 
-The environment is pre-configured for CMake-based CUDA projects. You can build the existing projects with:
+The environment is pre-configured for CMake-based CUDA projects. You can build all kernels with:
 
 ```bash
+# Using a preset (recommended — Ninja must be available: apt-get install ninja-build)
+cmake --preset default
+cmake --build --preset default -j$(nproc)
+
+# Or manually
 mkdir build && cd build
 cmake ..
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ```
+
+Compiled binaries land in `build/source/<kernel>/<kernel>` (e.g., `build/source/gemm/gemm`).
+
+To build a single kernel or disable others:
+
+```bash
+cmake --build . --target gemm
+cmake .. -DGPU_ENABLE_SPMV=OFF   # skip a slow-to-build kernel
+```
+
+Available presets (`CMakePresets.json`): `default` (SM70/T4), `native` (auto-detect), `ampere` (SM86), `release`.
 
 ## Included Sample Code
 

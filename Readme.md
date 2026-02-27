@@ -87,8 +87,31 @@ This project uses CMake to manage the build process for all CUDA kernels.
 - CUDA Toolkit installed (see [Dev Container](#using-dev-container-recommended) for a pre-configured environment)
 - CMake 3.20+
 - A C++17 compatible compiler (e.g., GCC 9+)
+- Ninja build system (for CMake presets; `sudo apt-get install ninja-build`)
 
-### Build all projects:
+### Build using presets (recommended):
+
+```bash
+# Default: Tesla T4 / Compute Capability 7.0
+cmake --preset default
+cmake --build --preset default -j$(nproc)
+
+# Auto-detect local GPU (requires CMake 3.23+)
+cmake --preset native
+cmake --build --preset native -j$(nproc)
+
+# Ampere (RTX 3080 / CC 8.6)
+cmake --preset ampere
+cmake --build --preset ampere -j$(nproc)
+
+# Optimized release build
+cmake --preset release
+cmake --build --preset release -j$(nproc)
+```
+
+Available presets are defined in `CMakePresets.json`.
+
+### Build manually:
 
 ```bash
 mkdir -p build && cd build
@@ -103,19 +126,24 @@ cmake -DCMAKE_CUDA_ARCHITECTURES=86 ..
 cmake --build . -j$(nproc)
 ```
 
-See the root `CMakeLists.txt` for additional architecture configuration options and best practices.
-
-### Build a specific project:
-
-To build only one specific kernel (e.g., `gemm`), you can specify the target:
+### Build a specific kernel:
 
 ```bash
-mkdir -p build && cd build
-cmake ..
 cmake --build . --target gemm
 ```
 
-The compiled binaries will be located in their respective subdirectories under `build/` (e.g., `build/gemm/gemm`).
+### Disable a kernel at configure time:
+
+```bash
+cmake -DGPU_ENABLE_GEMM=OFF ..
+```
+
+Each kernel has a corresponding `GPU_ENABLE_<KERNEL>` option flag (all `ON` by default).
+
+### Binary locations:
+
+- With presets: `build/<preset>/source/<kernel>/<kernel>` (e.g., `build/default/source/gemm/gemm`)
+- With manual build: `build/source/<kernel>/<kernel>` (e.g., `build/source/gemm/gemm`)
 
 ### Build on Google Colab
 
@@ -123,21 +151,52 @@ You can also build and run the C++/CUDA kernels on Google Colab using a free GPU
 
 ## Project Structure
 
-### Kernel Implementations
-Each directory below contains a standalone CUDA implementation and its own `CMakeLists.txt`.
+```
+gpu_playground/
+├── source/                    ← all C++/CUDA source code
+│   ├── utils/                 ← shared utility library
+│   │   └── cuda_helpers.h     ← CUDA_CHECK macro + getTime()
+│   ├── gemm/                  ← each kernel: main.cpp + <kernel>.h + <kernel>.cpp
+│   ├── sigmoid/
+│   ├── softmax/
+│   ├── prefix_sum/
+│   ├── geglu/
+│   ├── silu/
+│   ├── swiglu/
+│   ├── matrix_mul/
+│   ├── matrix_transpose/
+│   ├── spmv/
+│   ├── interleave_arrays/
+│   ├── reverse_array/
+│   ├── value_clipping/
+│   └── rgb_to_grayscale/
+├── CMakeLists.txt             ← root build file with GPU_ENABLE_* feature flags
+├── CMakePresets.json          ← build presets (default, native, ampere, release)
+├── cuda_perf_analysis.sh      ← performance profiling script
+├── docs/                      ← development guidelines and best practices
+├── gpu-mode/                  ← GPU MODE competition tools and submissions
+└── .devcontainer/             ← Docker-based CUDA development environment
+```
 
-- `reverse_array/` - Simple array reversal
-- `prefix_sum/` - Parallel prefix sum (scan)
-- `matrix_transpose/` - Optimized matrix transpose using shared memory
-- `matrix_mul/` - Basic tiled matrix multiplication
-- `gemm/` - General Matrix Multiplication with advanced tiling
-- `spmv/` - Sparse Matrix-Vector Multiplication
-- `softmax/` - Softmax activation function
-- `geglu/` - Gated Linear Unit with GELU activation
-- `silu/` - SiLU (Swish) activation function
-- `swiglu/` - SwiGLU activation function
-- `interleave_arrays/` - Array interleaving (AoS to SoA patterns)
-- `value_clipping/` - Element-wise value clipping
+### Kernel Implementations
+Each kernel under `source/` follows the same 3-file layout: `main.cpp` (test harness) + `<kernel>.h` (declarations) + `<kernel>.cpp` (implementations).
+
+| Kernel | Description |
+|--------|-------------|
+| `gemm` | General Matrix Multiplication with advanced tiling (α·A·B + β·C) |
+| `sigmoid` | Sigmoid activation — scalar and vectorized float4 variants |
+| `softmax` | Numerically stable softmax using multi-stage reduction |
+| `prefix_sum` | Parallel inclusive prefix scan (Hillis-Steele) |
+| `geglu` | Gated Linear Unit with GELU activation (Transformer FFN) |
+| `silu` | SiLU / Swish activation (x·σ(x)) |
+| `swiglu` | SwiGLU gated activation |
+| `matrix_mul` | Basic tiled matrix multiplication |
+| `matrix_transpose` | Matrix transpose using shared memory |
+| `spmv` | Sparse Matrix-Vector Multiplication (4 kernel variants) |
+| `interleave_arrays` | Array interleaving (AoS ↔ SoA patterns) |
+| `reverse_array` | In-place array reversal |
+| `value_clipping` | Element-wise value clamping |
+| `rgb_to_grayscale` | RGB to grayscale conversion (Rec.601 luminance) |
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
@@ -153,10 +212,8 @@ Each directory below contains a standalone CUDA implementation and its own `CMak
   - `cuda_best_practices_guide.md` - CUDA best practices and common pitfalls
 
 ### Development Tools
-- `.devcontainer/` - Docker-based CUDA development environment (VS Code)
-- `cuda_perf_analysis.sh` - General-purpose CUDA performance analysis script
-- `tests/` - Test infrastructure (WIP)
-- `utils/` - Utility functions (WIP)
+- `.devcontainer/` - Docker-based CUDA development environment (VS Code Dev Containers)
+- `cuda_perf_analysis.sh` - General-purpose CUDA performance analysis script (auto-detects nvprof/ncu/nsys)
 
 ## Examples
 
