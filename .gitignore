@@ -7,3 +7,4 @@ build
 *.fatbin
 build
 .vscode
+**/*__pycache__
