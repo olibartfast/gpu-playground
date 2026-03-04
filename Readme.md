@@ -208,8 +208,9 @@ Each kernel under `source/` follows the same 3-file layout: `main.cpp` (test har
 - `docs/` - Development guidelines and best practices
   - `EXAMPLES.md` - Detailed code examples and benchmarks
   - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
-  - `cuda-copilot-rules.md` - CUDA programming rules for AI coding assistants
-  - `cuda_best_practices_guide.md` - CUDA best practices and common pitfalls
+  - `agentic_ai/cuda-copilot-rules.md` - CUDA programming rules for AI coding assistants
+  - `cuda_best_practices_guide.md` - Original comprehensive CUDA best-practices reference
+  - `agentic_ai/cuda_best_practice_agent_style.m` - CUDA-Agent-style concise optimization workflow
 
 ### Development Tools
 - `.devcontainer/` - Docker-based CUDA development environment (VS Code Dev Containers)
