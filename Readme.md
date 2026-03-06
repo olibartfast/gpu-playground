@@ -208,8 +208,7 @@ Each kernel under `source/` follows the same 3-file layout: `main.cpp` (test har
 - `docs/` - Development guidelines and best practices
   - `EXAMPLES.md` - Detailed code examples and benchmarks
   - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
-  - `cuda-copilot-rules.md` - CUDA programming rules for AI coding assistants
-  - `cuda_best_practices_guide.md` - CUDA best practices and common pitfalls
+  - `adding-a-new-kernel.md` - How-To adding a new kernel to the project
 
 ### Development Tools
 - `.devcontainer/` - Docker-based CUDA development environment (VS Code Dev Containers)
@@ -249,5 +248,6 @@ For detailed code examples and benchmarks using different frameworks, see [EXAMP
 * [Modular CUDA Setup Guide](https://www.modular.com/mojo)
 * [AI CUDA Engineer: Official Paper and Leaderboard](https://pub.sakana.ai/ai-cuda-engineer)
 * [AI CUDA Engineer: Dataset](https://huggingface.co/datasets/SakanaAI/AI-CUDA-Engineer-Archive)
+* [ByteDance CUDA Agent](https://github.com/BytedTsinghua-SIA/CUDA-Agent)
 * [Course on CUDA programming at Oxford Mathematical Institute](https://people.maths.ox.ac.uk/~gilesm/cuda/)
 
