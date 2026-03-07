@@ -1,5 +1,5 @@
 #include "softmax.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 #include <cmath>
 #include <cfloat>
 
@@ -101,7 +101,6 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
     cl_device_id dev = clSetupGPU(ctx, queue);
     cl_program prog = clBuildFromSource(ctx, dev, KERNEL_SOURCE);
 
-    // Create the first kernel early to query preferred work-group size
     cl_int err;
     cl_kernel k_find_max = clCreateKernel(prog, "find_max_partial_kernel", &err); CL_CHECK(err);
     size_t localSize = clPreferredLocalSize(k_find_max, dev);
@@ -124,7 +123,6 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
     size_t sharedSize = localSize * sizeof(float);
     int isMax = 1, isSum = 0;
 
-    // Stage 1: find max
     CL_CHECK(clSetKernelArg(k_find_max, 0, sizeof(cl_mem), &d_input));
     CL_CHECK(clSetKernelArg(k_find_max, 1, sizeof(cl_mem), &d_partials));
     CL_CHECK(clSetKernelArg(k_find_max, 2, sizeof(int), &N));
@@ -141,7 +139,6 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
     CL_CHECK(clEnqueueNDRangeKernel(queue, k_reduce, 1, nullptr, &localSize, &localSize,
                                     0, nullptr, nullptr));
 
-    // Stage 2: sum of exp
     cl_kernel k_sum_exp = clCreateKernel(prog, "sum_exp_partial_kernel", &err); CL_CHECK(err);
     CL_CHECK(clSetKernelArg(k_sum_exp, 0, sizeof(cl_mem), &d_input));
     CL_CHECK(clSetKernelArg(k_sum_exp, 1, sizeof(cl_mem), &d_partials));
@@ -159,7 +156,6 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
     CL_CHECK(clEnqueueNDRangeKernel(queue, k_reduce, 1, nullptr, &localSize, &localSize,
                                     0, nullptr, nullptr));
 
-    // Stage 3: elementwise
     size_t globalElem = ((size_t)(N) + localSize - 1) / localSize * localSize;
     cl_kernel k_elem = clCreateKernel(prog, "softmax_elementwise_kernel", &err); CL_CHECK(err);
     CL_CHECK(clSetKernelArg(k_elem, 0, sizeof(cl_mem), &d_input));

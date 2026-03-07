@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_BACKEND
+#ifdef GPU_OPENCL_CPP_BACKEND
+#include "opencl_cpp/spmv.h"
+#elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/spmv.h"
 #else
 #include "cuda/spmv.h"

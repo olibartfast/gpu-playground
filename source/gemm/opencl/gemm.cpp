@@ -1,8 +1,6 @@
 #include "gemm.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 #include <cmath>
-
-#define TILE_SIZE 16
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void gemmTiled(__global const float* A,

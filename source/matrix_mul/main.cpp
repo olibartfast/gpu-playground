@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_BACKEND
+#ifdef GPU_OPENCL_CPP_BACKEND
+#include "opencl_cpp/matrix_mul.h"
+#elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/matrix_mul.h"
 #else
 #include "cuda/matrix_mul.h"

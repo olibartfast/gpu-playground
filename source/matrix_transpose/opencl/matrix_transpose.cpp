@@ -1,5 +1,5 @@
 #include "matrix_transpose.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void matrix_transpose_kernel(__global const float* input,

@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_BACKEND
+#ifdef GPU_OPENCL_CPP_BACKEND
+#include "opencl_cpp/clip.h"
+#elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/clip.h"
 #else
 #include "cuda/clip.h"

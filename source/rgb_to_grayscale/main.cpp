@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_BACKEND
+#ifdef GPU_OPENCL_CPP_BACKEND
+#include "opencl_cpp/rgb_to_grayscale.h"
+#elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/rgb_to_grayscale.h"
 #else
 #include "cuda/rgb_to_grayscale.h"

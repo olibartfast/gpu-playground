@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_BACKEND
+#ifdef GPU_OPENCL_CPP_BACKEND
+#include "opencl_cpp/reverse.h"
+#elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/reverse.h"
 #else
 #include "cuda/reverse.h"

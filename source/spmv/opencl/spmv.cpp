@@ -1,5 +1,5 @@
 #include "spmv.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void spmvRowPerThread(__global const float* A,
