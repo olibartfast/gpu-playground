@@ -81,15 +81,16 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 
 ## Building the Projects
 
-This project uses CMake to manage the build process for all CUDA kernels.
+This project uses CMake to manage the build process for all GPU kernels. Both CUDA and OpenCL backends are supported via the `USE_OPENCL` flag.
 
 ### Prerequisites for C++:
 - CUDA Toolkit installed (see [Dev Container](#using-dev-container-recommended) for a pre-configured environment)
 - CMake 3.20+
 - A C++17 compatible compiler (e.g., GCC 9+)
 - Ninja build system (for CMake presets; `sudo apt-get install ninja-build`)
+- For OpenCL: `libopencl-dev` / `ocl-icd-opencl-dev`
 
-### Build using presets (recommended):
+### Build using presets (CUDA, recommended):
 
 ```bash
 # Default: Tesla T4 / Compute Capability 7.0
@@ -111,7 +112,16 @@ cmake --build --preset release -j$(nproc)
 
 Available presets are defined in `CMakePresets.json`.
 
-### Build manually:
+### Build with OpenCL backend:
+
+```bash
+cmake -B build/opencl -DUSE_OPENCL=ON
+cmake --build build/opencl -j$(nproc)
+```
+
+Binaries land in `build/opencl/source/<kernel>/<kernel>`. The same `GPU_ENABLE_*` feature flags apply.
+
+### Build manually (CUDA):
 
 ```bash
 mkdir -p build && cd build
@@ -144,6 +154,7 @@ Each kernel has a corresponding `GPU_ENABLE_<KERNEL>` option flag (all `ON` by d
 
 - With presets: `build/<preset>/source/<kernel>/<kernel>` (e.g., `build/default/source/gemm/gemm`)
 - With manual build: `build/source/<kernel>/<kernel>` (e.g., `build/source/gemm/gemm`)
+- OpenCL build: `build/opencl/source/<kernel>/<kernel>`
 
 ### Build on Google Colab
 
@@ -153,24 +164,16 @@ You can also build and run the C++/CUDA kernels on Google Colab using a free GPU
 
 ```
 gpu_playground/
-├── source/                    ← all C++/CUDA source code
-│   ├── utils/                 ← shared utility library
-│   │   └── cuda_helpers.h     ← CUDA_CHECK macro + getTime()
-│   ├── gemm/                  ← each kernel: main.cpp + <kernel>.h + <kernel>.cpp
-│   ├── sigmoid/
-│   ├── softmax/
-│   ├── prefix_sum/
-│   ├── geglu/
-│   ├── silu/
-│   ├── swiglu/
-│   ├── matrix_mul/
-│   ├── matrix_transpose/
-│   ├── spmv/
-│   ├── interleave_arrays/
-│   ├── reverse_array/
-│   ├── value_clipping/
-│   └── rgb_to_grayscale/
-├── CMakeLists.txt             ← root build file with GPU_ENABLE_* feature flags
+├── source/                    ← all C++/CUDA/OpenCL source code
+│   ├── utils/                 ← shared utility libraries
+│   │   ├── cuda_helpers.h     ← CUDA_CHECK macro + getTime()
+│   │   └── opencl_helpers.h   ← CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
+│   ├── gemm/                  ← each kernel: main.cpp + cuda/ + opencl/
+│   │   ├── main.cpp           ← backend-agnostic test harness (#ifdef GPU_OPENCL_BACKEND)
+│   │   ├── cuda/              ← CUDA kernel + host-pointer wrapper
+│   │   └── opencl/            ← OpenCL kernel string + implementation
+│   └── ...                    ← same layout for all 14 kernels
+├── CMakeLists.txt             ← root build file; USE_OPENCL flag + GPU_ENABLE_* flags
 ├── CMakePresets.json          ← build presets (default, native, ampere, release)
 ├── cuda_perf_analysis.sh      ← performance profiling script
 ├── docs/                      ← development guidelines and best practices
@@ -179,7 +182,7 @@ gpu_playground/
 ```
 
 ### Kernel Implementations
-Each kernel under `source/` follows the same 3-file layout: `main.cpp` (test harness) + `<kernel>.h` (declarations) + `<kernel>.cpp` (implementations).
+Each kernel under `source/` has a `cuda/` and `opencl/` subdirectory for the backend implementations, and a shared `main.cpp` test harness that selects the backend at compile time.
 
 | Kernel | Description |
 |--------|-------------|
