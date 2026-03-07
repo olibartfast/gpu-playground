@@ -8,3 +8,4 @@ build
 build
 .vscode
 **/*__pycache__
+.*
