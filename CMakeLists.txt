@@ -1,31 +1,44 @@
 cmake_minimum_required(VERSION 3.20)
-project(gpu_playground
-    VERSION 0.1.0
-    DESCRIPTION "A playground for GPU programming"
-    LANGUAGES CXX CUDA)
 
-# Global settings for all CUDA targets
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+option(USE_OPENCL "Build OpenCL backends instead of CUDA" OFF)
 
-# Default to Tesla T4 architecture if not specified
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 70)
+if(USE_OPENCL)
+    project(gpu_playground
+        VERSION 0.1.0
+        DESCRIPTION "A playground for GPU programming"
+        LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    find_package(OpenCL REQUIRED)
+else()
+    project(gpu_playground
+        VERSION 0.1.0
+        DESCRIPTION "A playground for GPU programming"
+        LANGUAGES CXX CUDA)
+
+    # Global settings for all CUDA targets
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+    # Default to Tesla T4 architecture if not specified
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 70)
+    endif()
+
+    # CUDA Architecture Best Practices:
+    # - CMake 3.23+: Just don't set it at all, or use "native"
+    # - CMake 3.18-3.22: Use "native" or specify a list
+    # - For CI/distribution: Set explicit list like 70-real;75-real;80-real;86 to avoid PTX overhead
+    # - Command line override: cmake -DCMAKE_CUDA_ARCHITECTURES="80;86" ..
+    # - The -real suffix compiles actual binary code (SASS) instead of intermediate PTX,
+    #   which is faster at runtime but produces larger binaries.
+    # See: https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
+
+    # Enable separable compilation globally for CUDA
+    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 endif()
-
-# CUDA Architecture Best Practices:
-# - CMake 3.23+: Just don't set it at all, or use "native"
-# - CMake 3.18-3.22: Use "native" or specify a list
-# - For CI/distribution: Set explicit list like 70-real;75-real;80-real;86 to avoid PTX overhead
-# - Command line override: cmake -DCMAKE_CUDA_ARCHITECTURES="80;86" ..
-# - The -real suffix compiles actual binary code (SASS) instead of intermediate PTX,
-#   which is faster at runtime but produces larger binaries.
-# See: https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
-
-# Enable separable compilation globally for CUDA
-set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 # Shared utility library
 add_subdirectory(source/utils)
