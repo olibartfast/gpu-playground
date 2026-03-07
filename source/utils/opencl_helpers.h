@@ -47,19 +47,24 @@ inline cl_device_id clSetupGPU(cl_context& ctx, cl_command_queue& queue) {
     }
 
     cl_int err;
-    ctx   = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
+    ctx = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
     CL_CHECK(err);
-    queue = clCreateCommandQueue(ctx, device, 0, &err);
+    const cl_queue_properties props[] = {
+        CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0
+    };
+    queue = clCreateCommandQueueWithProperties(ctx, device, props, &err);
     CL_CHECK(err);
     return device;
 }
 
 // Compile an OpenCL program from source.  Prints build log and aborts on error.
-inline cl_program clBuildFromSource(cl_context ctx, cl_device_id dev, const char* src) {
+// Pass compiler options such as "-D TILE_SIZE=16" via the options parameter.
+inline cl_program clBuildFromSource(cl_context ctx, cl_device_id dev, const char* src,
+                                    const char* options = nullptr) {
     cl_int err;
     cl_program prog = clCreateProgramWithSource(ctx, 1, &src, nullptr, &err);
     CL_CHECK(err);
-    err = clBuildProgram(prog, 1, &dev, nullptr, nullptr, nullptr);
+    err = clBuildProgram(prog, 1, &dev, options, nullptr, nullptr);
     if (err != CL_SUCCESS) {
         size_t log_size = 0;
         clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
@@ -69,6 +74,21 @@ inline cl_program clBuildFromSource(cl_context ctx, cl_device_id dev, const char
         std::abort();
     }
     return prog;
+}
+
+// Query the preferred work-group size multiple and return a local size aligned to it.
+// Rounds 'target' down to a multiple of preferred_multiple, clamped to max_work_group_size.
+inline size_t clPreferredLocalSize(cl_kernel kernel, cl_device_id dev, size_t target = 256) {
+    size_t preferred_mult = 0, max_wgs = 0;
+    clGetKernelWorkGroupInfo(kernel, dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
+                             sizeof(preferred_mult), &preferred_mult, nullptr);
+    clGetKernelWorkGroupInfo(kernel, dev, CL_KERNEL_WORK_GROUP_SIZE,
+                             sizeof(max_wgs), &max_wgs, nullptr);
+    if (preferred_mult == 0) preferred_mult = 64;
+    size_t local = (target / preferred_mult) * preferred_mult;
+    if (local == 0) local = preferred_mult;
+    if (max_wgs > 0 && local > max_wgs) local = max_wgs;
+    return local;
 }
 
 // Release all OpenCL objects created by clSetupGPU / clBuildFromSource.

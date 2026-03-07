@@ -43,8 +43,8 @@ void interleave_gpu(const float* h_A, const float* h_B, float* h_output, int N) 
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 3, sizeof(int), &N));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(N) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(N) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

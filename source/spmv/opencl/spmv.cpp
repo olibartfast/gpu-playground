@@ -51,8 +51,8 @@ void spmvGPU(const float* h_A, const float* h_x, float* h_y, int M, int N) {
     CL_CHECK(clSetKernelArg(kernel, 3, sizeof(int), &M));
     CL_CHECK(clSetKernelArg(kernel, 4, sizeof(int), &N));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(M) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(M) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

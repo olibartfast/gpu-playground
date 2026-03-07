@@ -2,8 +2,9 @@
 #include "opencl_helpers.h"
 #include <cmath>
 
-static const char* KERNEL_SOURCE = R"(
 #define TILE_SIZE 16
+
+static const char* KERNEL_SOURCE = R"(
 __kernel void gemmTiled(__global const float* A,
                         __global const float* B,
                         __global float* C,
@@ -58,7 +59,7 @@ void gemmGPU(const float* h_A, const float* h_B, float* h_C,
     cl_context ctx;
     cl_command_queue queue;
     cl_device_id dev = clSetupGPU(ctx, queue);
-    cl_program prog = clBuildFromSource(ctx, dev, KERNEL_SOURCE);
+    cl_program prog = clBuildFromSource(ctx, dev, KERNEL_SOURCE, "-D TILE_SIZE=16");
 
     cl_int err;
     cl_mem d_A = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,

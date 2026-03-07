@@ -40,8 +40,8 @@ void reverse_array_gpu(float* h_input, int N) {
     CL_CHECK(clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_input));
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(int), &N));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(N) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(N) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

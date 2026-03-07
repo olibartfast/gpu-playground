@@ -6,7 +6,7 @@ static const char* KERNEL_SOURCE = R"(
 __kernel void silu_kernel(__global const float* input, __global float* output, int N) {
     int i = get_global_id(0);
     if (i < N) {
-        float sigma = 1.0f / (1.0f + exp(-input[i]));
+        float sigma = 1.0f / (1.0f + native_exp(-input[i]));
         output[i] = input[i] * sigma;
     }
 }
@@ -38,8 +38,8 @@ void silu_gpu(const float* h_input, float* h_output, int N) {
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(int), &N));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(N) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(N) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

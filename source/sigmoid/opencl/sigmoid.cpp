@@ -5,7 +5,7 @@
 static const char* KERNEL_SOURCE = R"(
 __kernel void sigmoid_kernel(__global const float* X, __global float* Y, int N) {
     int i = get_global_id(0);
-    if (i < N) Y[i] = 1.0f / (1.0f + exp(-X[i]));
+    if (i < N) Y[i] = 1.0f / (1.0f + native_exp(-X[i]));
 }
 
 __kernel void sigmoid_kernel2(__global const float* X, __global float* Y, int N) {
@@ -13,14 +13,14 @@ __kernel void sigmoid_kernel2(__global const float* X, __global float* Y, int N)
     if (i + 3 < N) {
         float4 x = vload4(get_global_id(0), X);
         float4 y;
-        y.x = 1.0f / (1.0f + exp(-x.x));
-        y.y = 1.0f / (1.0f + exp(-x.y));
-        y.z = 1.0f / (1.0f + exp(-x.z));
-        y.w = 1.0f / (1.0f + exp(-x.w));
+        y.x = 1.0f / (1.0f + native_exp(-x.x));
+        y.y = 1.0f / (1.0f + native_exp(-x.y));
+        y.z = 1.0f / (1.0f + native_exp(-x.z));
+        y.w = 1.0f / (1.0f + native_exp(-x.w));
         vstore4(y, get_global_id(0), Y);
     } else {
         for (int j = i; j < N; j++) {
-            Y[j] = 1.0f / (1.0f + exp(-X[j]));
+            Y[j] = 1.0f / (1.0f + native_exp(-X[j]));
         }
     }
 }
@@ -51,8 +51,8 @@ void sigmoid_gpu(const float* h_input, float* h_output, int N) {
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(int), &N));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(N) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(N) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));
@@ -83,9 +83,9 @@ void sigmoid2_gpu(const float* h_input, float* h_output, int N) {
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(int), &N));
 
-    size_t localSize = 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
     int nVec = N / 4;
-    size_t globalSize = nVec > 0 ? ((size_t)(nVec) + 255) / 256 * 256 : localSize;
+    size_t globalSize = nVec > 0 ? ((size_t)(nVec) + localSize - 1) / localSize * localSize : localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

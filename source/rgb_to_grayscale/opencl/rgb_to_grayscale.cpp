@@ -44,8 +44,8 @@ void rgb_to_grayscale_gpu(const float* h_input, float* h_output, int total_pixel
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(int), &total_pixels));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(total_pixels) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(total_pixels) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));
