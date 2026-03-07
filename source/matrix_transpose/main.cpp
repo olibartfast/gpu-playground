@@ -1,18 +1,19 @@
-#include "matrix_transpose.h"
+#ifdef GPU_OPENCL_BACKEND
+#include "opencl/matrix_transpose.h"
+#else
+#include "cuda/matrix_transpose.h"
+#endif
 #include <iostream>
 #include <chrono>
+#include <cstdlib>
+#include <cstring>
 
 #define PRINT
 
-// Function to print the matrix
-void print_matrix(float* matrix, int rows, int cols, const std::string& message = "") {
-    if (!message.empty()) {
-        std::cout << message << ":\n";
-    }
+void print_matrix(const float* matrix, int rows, int cols, const std::string& message = "") {
+    if (!message.empty()) std::cout << message << ":\n";
     for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            std::cout << matrix[i * cols + j] << " ";
-        }
+        for (int j = 0; j < cols; j++) std::cout << matrix[i * cols + j] << " ";
         std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -33,111 +34,36 @@ int main() {
         return 1;
     }
 
-    // Initialize matrix
-    for (int i = 0; i < input_size; i++) {
-        input[i] = i + 1;
-    }
+    for (int i = 0; i < input_size; i++) input[i] = (float)(i + 1);
 
     #ifdef PRINT
     print_matrix(input, rows, cols, "Original matrix");
     #endif
 
-    // CPU transpose
     auto start = std::chrono::steady_clock::now();
     matrix_transpose_cpu(input, output_cpu, rows, cols);
     auto end = std::chrono::steady_clock::now();
-
     #ifdef PRINT
     print_matrix(output_cpu, cols, rows, "CPU transposed");
     #endif
     std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
 
-    // GPU transpose
-    float* d_input;
-    float* d_output;
-    cudaError_t err = cudaMalloc(&d_input, sizeof(float) * input_size);
-    if (err != cudaSuccess) {
-        std::cerr << "CUDA malloc input failed: " << cudaGetErrorString(err) << std::endl;
-        free(input);
-        free(output_cpu);
-        free(output_gpu);
-        return 1;
-    }
-
-    err = cudaMalloc(&d_output, sizeof(float) * output_size);
-    if (err != cudaSuccess) {
-        std::cerr << "CUDA malloc output failed: " << cudaGetErrorString(err) << std::endl;
-        cudaFree(d_input);
-        free(input);
-        free(output_cpu);
-        free(output_gpu);
-        return 1;
-    }
-
     start = std::chrono::steady_clock::now();
-    err = cudaMemcpy(d_input, input, sizeof(float) * input_size, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess) {
-        std::cerr << "CUDA memcpy H2D failed: " << cudaGetErrorString(err) << std::endl;
-        cudaFree(d_input);
-        cudaFree(d_output);
-        free(input);
-        free(output_cpu);
-        free(output_gpu);
-        return 1;
-    }
-
-    dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE);
-    dim3 numberOfBlocks((cols + BLOCK_SIZE - 1) / BLOCK_SIZE,
-                        (rows + BLOCK_SIZE - 1) / BLOCK_SIZE);
-
-    matrix_transpose_kernel<<<numberOfBlocks, threadsPerBlock>>>(d_input, d_output, rows, cols);
-    err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        std::cerr << "CUDA kernel failed: " << cudaGetErrorString(err) << std::endl;
-        cudaFree(d_input);
-        cudaFree(d_output);
-        free(input);
-        free(output_cpu);
-        free(output_gpu);
-        return 1;
-    }
-
-    err = cudaMemcpy(output_gpu, d_output, sizeof(float) * output_size, cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        std::cerr << "CUDA memcpy D2H failed: " << cudaGetErrorString(err) << std::endl;
-        cudaFree(d_input);
-        cudaFree(d_output);
-        free(input);
-        free(output_cpu);
-        free(output_gpu);
-        return 1;
-    }
-
+    matrix_transpose_gpu(input, output_gpu, rows, cols);
     end = std::chrono::steady_clock::now();
     #ifdef PRINT
     print_matrix(output_gpu, cols, rows, "GPU transposed");
     #endif
     std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
 
-    // Verify results match
     bool results_match = true;
     for (int i = 0; i < output_size; i++) {
-        if (output_cpu[i] != output_gpu[i]) {
-            results_match = false;
-            break;
-        }
+        if (output_cpu[i] != output_gpu[i]) { results_match = false; break; }
     }
+    std::cout << (results_match ? "Results match!" : "Results do not match!") << std::endl;
 
-    if (results_match) {
-        std::cout << "Results match!" << std::endl;
-    } else {
-        std::cout << "Results do not match!" << std::endl;
-    }
-
-    cudaFree(d_input);
-    cudaFree(d_output);
     free(input);
     free(output_cpu);
     free(output_gpu);
-    return 0;
+    return results_match ? 0 : 1;
 }

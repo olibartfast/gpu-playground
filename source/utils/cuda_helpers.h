@@ -4,13 +4,15 @@
 #include <cstdlib>
 #include <sys/time.h>
 
-#define CUDA_CHECK(err) { \
-    if (err != cudaSuccess) { \
-        fprintf(stderr, "CUDA Error: %s (error code %d) at %s:%d\n", \
-                cudaGetErrorString(err), err, __FILE__, __LINE__); \
-        exit(EXIT_FAILURE); \
-    } \
-}
+#define CUDA_CHECK(call)                                                     \
+  do {                                                                       \
+    cudaError_t err__ = (call);                                              \
+    if (err__ != cudaSuccess) {                                              \
+      fprintf(stderr, "CUDA error %s:%d: %s\n", __FILE__, __LINE__,         \
+              cudaGetErrorString(err__));                                     \
+      std::abort();                                                          \
+    }                                                                        \
+  } while (0)
 
 inline double getTime() {
     struct timeval tv;
