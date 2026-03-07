@@ -1,5 +1,5 @@
 #include "prefix_sum.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void block_inclusive_scan(__global const float* input,
@@ -79,7 +79,6 @@ void prefix_scan_gpu(const float* h_input, float* h_output, int N) {
     cl_mem d_output = clCreateBuffer(ctx, CL_MEM_READ_WRITE, sizeof(float) * N, nullptr, &err);
     CL_CHECK(err);
 
-    // Create scan kernel early to query preferred work-group size for buffer sizing
     cl_kernel k_scan = clCreateKernel(prog, "block_inclusive_scan", &err); CL_CHECK(err);
     size_t localSize = clPreferredLocalSize(k_scan, dev);
     int threadsPerBlock = (int)localSize;
@@ -103,7 +102,7 @@ void prefix_scan_gpu(const float* h_input, float* h_output, int N) {
                                     0, nullptr, nullptr));
 
     if (numberOfBlocks > 1) {
-        size_t scanBlocksGlobal = localSize; // single block for block_sums
+        size_t scanBlocksGlobal = localSize;
         cl_kernel k_scan_sums = clCreateKernel(prog, "scan_block_sums", &err); CL_CHECK(err);
         CL_CHECK(clSetKernelArg(k_scan_sums, 0, sizeof(cl_mem), &d_block_sums));
         CL_CHECK(clSetKernelArg(k_scan_sums, 1, sizeof(int), &numberOfBlocks));

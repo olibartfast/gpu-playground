@@ -1,5 +1,5 @@
 #include "clip.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void clip_kernel(__global const float* input, __global float* output,

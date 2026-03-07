@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-option(USE_OPENCL "Build OpenCL backends instead of CUDA" OFF)
+option(USE_OPENCL     "Build OpenCL C API backends instead of CUDA"        OFF)
+option(USE_OPENCL_CPP "Build OpenCL C++ wrapper backends instead of CUDA"  OFF)
 
-if(USE_OPENCL)
+if(USE_OPENCL OR USE_OPENCL_CPP)
     project(gpu_playground
         VERSION 0.1.0
         DESCRIPTION "A playground for GPU programming"

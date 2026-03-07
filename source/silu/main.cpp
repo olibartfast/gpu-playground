@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_BACKEND
+#ifdef GPU_OPENCL_CPP_BACKEND
+#include "opencl_cpp/silu.h"
+#elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/silu.h"
 #else
 #include "cuda/silu.h"

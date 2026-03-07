@@ -1,5 +1,5 @@
 #include "sigmoid.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 #include <cmath>
 
 static const char* KERNEL_SOURCE = R"(

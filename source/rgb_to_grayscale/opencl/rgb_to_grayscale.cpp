@@ -1,5 +1,5 @@
 #include "rgb_to_grayscale.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void rgb_to_grayscale_kernel(__global const float* input,

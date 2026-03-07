@@ -1,4 +1,13 @@
-if(USE_OPENCL)
+if(USE_OPENCL_CPP)
+    add_library(opencl_cpp_helpers INTERFACE)
+    target_include_directories(opencl_cpp_helpers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(opencl_cpp_helpers INTERFACE OpenCL::OpenCL)
+    # CL/opencl.hpp requires opencl-clhpp-headers (Ubuntu: sudo apt install opencl-clhpp-headers).
+    # CMake 3.26+ exposes it as OpenCL::HeadersCpp; link it if available.
+    if(TARGET OpenCL::HeadersCpp)
+        target_link_libraries(opencl_cpp_helpers INTERFACE OpenCL::HeadersCpp)
+    endif()
+elseif(USE_OPENCL)
     add_library(opencl_helpers INTERFACE)
     target_include_directories(opencl_helpers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(opencl_helpers INTERFACE OpenCL::OpenCL)

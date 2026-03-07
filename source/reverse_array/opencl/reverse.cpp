@@ -1,5 +1,5 @@
 #include "reverse.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void reverse_array_kernel(__global float* input, int N) {

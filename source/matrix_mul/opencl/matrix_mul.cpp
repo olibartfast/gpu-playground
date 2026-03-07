@@ -1,5 +1,5 @@
 #include "matrix_mul.h"
-#include "opencl_helpers.h"
+#include "opencl_c_helpers.h"
 
 #define CL_TILE_SIZE 2
 
