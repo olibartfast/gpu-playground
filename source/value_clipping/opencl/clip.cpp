@@ -41,8 +41,8 @@ void clip_gpu(const float* h_input, float* h_output, int N, float lo, float hi) 
     CL_CHECK(clSetKernelArg(kernel, 3, sizeof(float), &lo));
     CL_CHECK(clSetKernelArg(kernel, 4, sizeof(float), &hi));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(N) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(N) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

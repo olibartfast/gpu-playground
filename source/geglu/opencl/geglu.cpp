@@ -42,8 +42,8 @@ void geglu_gpu(const float* h_input, float* h_output, int halfN) {
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(int), &halfN));
 
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(halfN) + 255) / 256 * 256;
+    size_t localSize = clPreferredLocalSize(kernel, dev);
+    size_t globalSize = ((size_t)(halfN) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

@@ -38,7 +38,7 @@ __kernel void sum_exp_partial_kernel(__global const float* input,
 
     float my_sum = 0.0f;
     while (i < N) {
-        my_sum += exp(input[i] - (*max_val));
+        my_sum += native_exp(input[i] - (*max_val));
         i += gridSize;
     }
     sdata[tid] = my_sum;
@@ -82,7 +82,7 @@ __kernel void softmax_elementwise_kernel(__global const float* input,
                                          int N) {
     int i = get_global_id(0);
     if (i < N) {
-        output[i] = exp(input[i] - (*max_val)) / (*sum_exp);
+        output[i] = native_exp(input[i] - (*max_val)) / (*sum_exp);
     }
 }
 )";
@@ -101,15 +101,17 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
     cl_device_id dev = clSetupGPU(ctx, queue);
     cl_program prog = clBuildFromSource(ctx, dev, KERNEL_SOURCE);
 
+    // Create the first kernel early to query preferred work-group size
     cl_int err;
+    cl_kernel k_find_max = clCreateKernel(prog, "find_max_partial_kernel", &err); CL_CHECK(err);
+    size_t localSize = clPreferredLocalSize(k_find_max, dev);
+    int blocksPerGrid = (N + (int)localSize - 1) / (int)localSize;
+
     cl_mem d_input = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                     sizeof(float) * N, (void*)h_input, &err);
     CL_CHECK(err);
     cl_mem d_output = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, sizeof(float) * N, nullptr, &err);
     CL_CHECK(err);
-
-    size_t localSize = 256;
-    int blocksPerGrid = (N + (int)localSize - 1) / (int)localSize;
     cl_mem d_partials = clCreateBuffer(ctx, CL_MEM_READ_WRITE,
                                        sizeof(float) * blocksPerGrid, nullptr, &err);
     CL_CHECK(err);
@@ -123,7 +125,6 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
     int isMax = 1, isSum = 0;
 
     // Stage 1: find max
-    cl_kernel k_find_max = clCreateKernel(prog, "find_max_partial_kernel", &err); CL_CHECK(err);
     CL_CHECK(clSetKernelArg(k_find_max, 0, sizeof(cl_mem), &d_input));
     CL_CHECK(clSetKernelArg(k_find_max, 1, sizeof(cl_mem), &d_partials));
     CL_CHECK(clSetKernelArg(k_find_max, 2, sizeof(int), &N));
@@ -159,7 +160,7 @@ void softmax_gpu(const float* h_input, float* h_output, int N) {
                                     0, nullptr, nullptr));
 
     // Stage 3: elementwise
-    size_t globalElem = ((size_t)(N) + 255) / 256 * 256;
+    size_t globalElem = ((size_t)(N) + localSize - 1) / localSize * localSize;
     cl_kernel k_elem = clCreateKernel(prog, "softmax_elementwise_kernel", &err); CL_CHECK(err);
     CL_CHECK(clSetKernelArg(k_elem, 0, sizeof(cl_mem), &d_input));
     CL_CHECK(clSetKernelArg(k_elem, 1, sizeof(cl_mem), &d_output));

@@ -4,7 +4,6 @@
 #define CL_TILE_SIZE 2
 
 static const char* KERNEL_SOURCE = R"(
-#define TILE_SIZE 2
 __kernel void matrixMulTiled(__global float* A, __global float* B, __global float* C, int n) {
     __local float tileA[TILE_SIZE][TILE_SIZE];
     __local float tileB[TILE_SIZE][TILE_SIZE];
@@ -53,7 +52,7 @@ void matrixMulGPU(const float* h_A, const float* h_B, float* h_C, int n) {
     cl_context ctx;
     cl_command_queue queue;
     cl_device_id dev = clSetupGPU(ctx, queue);
-    cl_program prog = clBuildFromSource(ctx, dev, KERNEL_SOURCE);
+    cl_program prog = clBuildFromSource(ctx, dev, KERNEL_SOURCE, "-D TILE_SIZE=2");
 
     int size = n * n;
     cl_int err;

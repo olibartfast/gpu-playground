@@ -8,7 +8,7 @@ __kernel void swiglu_kernel(__global const float* input, __global float* output,
     if (i < N / 2) {
         float x1 = input[i];
         float x2 = input[i + N / 2];
-        float silu = x1 / (1.0f + exp(-x1));
+        float silu = x1 / (1.0f + native_exp(-x1));
         output[i] = silu * x2;
     }
 }
@@ -43,9 +43,9 @@ void swiglu_gpu(const float* h_input, float* h_output, int N) {
     CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(kernel, 2, sizeof(int), &N));
 
+    size_t localSize = clPreferredLocalSize(kernel, dev);
     int halfN = N / 2;
-    size_t localSize = 256;
-    size_t globalSize = ((size_t)(halfN) + 255) / 256 * 256;
+    size_t globalSize = ((size_t)(halfN) + localSize - 1) / localSize * localSize;
     CL_CHECK(clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize, &localSize,
                                     0, nullptr, nullptr));
     CL_CHECK(clFinish(queue));

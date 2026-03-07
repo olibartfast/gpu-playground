@@ -79,17 +79,18 @@ void prefix_scan_gpu(const float* h_input, float* h_output, int N) {
     cl_mem d_output = clCreateBuffer(ctx, CL_MEM_READ_WRITE, sizeof(float) * N, nullptr, &err);
     CL_CHECK(err);
 
-    int threadsPerBlock = 256;
+    // Create scan kernel early to query preferred work-group size for buffer sizing
+    cl_kernel k_scan = clCreateKernel(prog, "block_inclusive_scan", &err); CL_CHECK(err);
+    size_t localSize = clPreferredLocalSize(k_scan, dev);
+    int threadsPerBlock = (int)localSize;
     int numberOfBlocks = (N + threadsPerBlock - 1) / threadsPerBlock;
     cl_mem d_block_sums = clCreateBuffer(ctx, CL_MEM_READ_WRITE,
                                          sizeof(float) * numberOfBlocks, nullptr, &err);
     CL_CHECK(err);
 
-    size_t localSize = (size_t)threadsPerBlock;
     size_t sharedSize = localSize * sizeof(float);
     int blockSizeArg = threadsPerBlock;
 
-    cl_kernel k_scan = clCreateKernel(prog, "block_inclusive_scan", &err); CL_CHECK(err);
     CL_CHECK(clSetKernelArg(k_scan, 0, sizeof(cl_mem), &d_input));
     CL_CHECK(clSetKernelArg(k_scan, 1, sizeof(cl_mem), &d_output));
     CL_CHECK(clSetKernelArg(k_scan, 2, sizeof(cl_mem), &d_block_sums));
