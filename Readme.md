@@ -168,6 +168,7 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 | `reverse_array` | In-place array reversal |
 | `value_clipping` | Element-wise value clamping |
 | `rgb_to_grayscale` | RGB to grayscale conversion (Rec.601 luminance) |
+| `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) |
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
