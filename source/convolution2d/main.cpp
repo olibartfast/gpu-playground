@@ -83,7 +83,19 @@ int main() {
     print_matrix(output_gpu, out_rows, out_cols, "GPU Output");
     std::printf("Expected first test output should be all -6.00\n");
     bool small_ok = compare_results(output_cpu, output_gpu, out_rows * out_cols, 1e-4f);
+    std::printf("[kernel1] Small test: %s\n", small_ok ? "PASSED" : "FAILED");
     std::printf("CPU time: %.3f ms\nGPU time: %.3f ms\n\n", cpu_ms, gpu_ms);
+
+    float output_gpu2[out_rows * out_cols] = {};
+    auto g2_start = std::chrono::steady_clock::now();
+    convolution2d_gpu2(input, kernel, output_gpu2, input_rows, input_cols, kernel_rows, kernel_cols);
+    auto g2_end = std::chrono::steady_clock::now();
+    double gpu2_ms = std::chrono::duration<double, std::milli>(g2_end - g2_start).count();
+
+    print_matrix(output_gpu2, out_rows, out_cols, "GPU2 Output (fused)");
+    bool small_ok2 = compare_results(output_cpu, output_gpu2, out_rows * out_cols, 1e-4f);
+    std::printf("[kernel2] Small test: %s\n", small_ok2 ? "PASSED" : "FAILED");
+    std::printf("GPU2 time: %.3f ms\n\n", gpu2_ms);
 
     const int large_input_rows = 32;
     const int large_input_cols = 32;
@@ -96,6 +108,7 @@ int main() {
     float* large_kernel = new float[large_kernel_rows * large_kernel_cols];
     float* large_cpu = new float[large_out_rows * large_out_cols];
     float* large_gpu = new float[large_out_rows * large_out_cols];
+    float* large_gpu2 = new float[large_out_rows * large_out_cols];
 
     std::srand(42);
     for (int i = 0; i < large_input_rows * large_input_cols; i++) {
@@ -111,16 +124,23 @@ int main() {
     convolution2d_gpu(large_input, large_kernel, large_gpu,
                       large_input_rows, large_input_cols,
                       large_kernel_rows, large_kernel_cols);
+    convolution2d_gpu2(large_input, large_kernel, large_gpu2,
+                       large_input_rows, large_input_cols,
+                       large_kernel_rows, large_kernel_cols);
 
     bool large_ok = compare_results(large_cpu, large_gpu, large_out_rows * large_out_cols, 1e-4f);
-    std::printf("\nLarge test: %s\n", large_ok ? "PASSED" : "FAILED");
+    std::printf("\n[kernel1] Large test: %s\n", large_ok ? "PASSED" : "FAILED");
+
+    bool large_ok2 = compare_results(large_cpu, large_gpu2, large_out_rows * large_out_cols, 1e-4f);
+    std::printf("[kernel2] Large test: %s\n", large_ok2 ? "PASSED" : "FAILED");
 
     delete[] large_input;
     delete[] large_kernel;
     delete[] large_cpu;
     delete[] large_gpu;
+    delete[] large_gpu2;
 
-    bool ok = small_ok && large_ok;
+    bool ok = small_ok && small_ok2 && large_ok && large_ok2;
     std::printf("\nOverall result: %s\n", ok ? "PASSED" : "FAILED");
     return ok ? 0 : 1;
 }
