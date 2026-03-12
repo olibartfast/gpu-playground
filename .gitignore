@@ -9,4 +9,4 @@ build
 .vscode
 **/*__pycache__
 .*
-!.github/workflows/opencl-build.yml
+!.github
