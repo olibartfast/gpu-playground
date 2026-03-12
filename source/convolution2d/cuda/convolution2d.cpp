@@ -68,6 +68,59 @@ static void conv2d_tiled_launch(const float* d_input, const float* d_kernel, flo
     CUDA_CHECK(cudaGetLastError());
 }
 
+// Fused single-pass: kernel weights cached in SMEM, each thread computes one
+// output element via implicit im2col dot product (DALI window-in-SMEM pattern).
+static __global__ void gemm_conv2d_fused(
+    const float* __restrict__ input,
+    const float* __restrict__ kernel,
+    float* __restrict__ output,
+    int in_rows, int in_cols,
+    int kernel_rows, int kernel_cols,
+    int out_rows, int out_cols)
+{
+    extern __shared__ float s_kernel[];
+
+    const int tid = threadIdx.y * blockDim.x + threadIdx.x;
+    const int block_threads = blockDim.x * blockDim.y;
+    const int kernel_elems = kernel_rows * kernel_cols;
+
+    for (int i = tid; i < kernel_elems; i += block_threads)
+        s_kernel[i] = kernel[i];
+    __syncthreads();
+
+    const int out_row = blockIdx.y * CONV2D_TILE_WIDTH + threadIdx.y;
+    const int out_col = blockIdx.x * CONV2D_TILE_WIDTH + threadIdx.x;
+
+    if (out_row < out_rows && out_col < out_cols) {
+        float acc = 0.0f;
+        for (int kr = 0; kr < kernel_rows; kr++)
+            for (int kc = 0; kc < kernel_cols; kc++)
+                acc += input[(out_row + kr) * in_cols + (out_col + kc)]
+                     * s_kernel[kr * kernel_cols + kc];
+        output[out_row * out_cols + out_col] = acc;
+    }
+}
+
+static void gemm_conv2d_fused_launch(const float* d_input, const float* d_kernel, float* d_output,
+                                     int input_rows, int input_cols,
+                                     int kernel_rows, int kernel_cols) {
+    int out_rows = input_rows - kernel_rows + 1;
+    int out_cols = input_cols - kernel_cols + 1;
+    if (out_rows <= 0 || out_cols <= 0) return;
+
+    dim3 block(CONV2D_TILE_WIDTH, CONV2D_TILE_WIDTH);
+    dim3 grid((out_cols + CONV2D_TILE_WIDTH - 1) / CONV2D_TILE_WIDTH,
+              (out_rows + CONV2D_TILE_WIDTH - 1) / CONV2D_TILE_WIDTH);
+    size_t smem = (size_t)kernel_rows * kernel_cols * sizeof(float);
+
+    gemm_conv2d_fused<<<grid, block, smem>>>(
+        d_input, d_kernel, d_output,
+        input_rows, input_cols,
+        kernel_rows, kernel_cols,
+        out_rows, out_cols);
+    CUDA_CHECK(cudaGetLastError());
+}
+
 void convolution2d_cpu(const float* input, const float* kernel, float* output,
                        int input_rows, int input_cols,
                        int kernel_rows, int kernel_cols) {
@@ -110,6 +163,36 @@ void convolution2d_gpu(const float* h_input, const float* h_kernel, float* h_out
                           cudaMemcpyHostToDevice));
 
     conv2d_tiled_launch(d_input, d_kernel, d_output, input_rows, input_cols, kernel_rows, kernel_cols);
+
+    CUDA_CHECK(cudaMemcpy(h_output, d_output, sizeof(float) * out_rows * out_cols,
+                          cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaFree(d_input));
+    CUDA_CHECK(cudaFree(d_kernel));
+    CUDA_CHECK(cudaFree(d_output));
+}
+
+void convolution2d_gpu2(const float* h_input, const float* h_kernel, float* h_output,
+                        int input_rows, int input_cols,
+                        int kernel_rows, int kernel_cols) {
+    int out_rows = input_rows - kernel_rows + 1;
+    int out_cols = input_cols - kernel_cols + 1;
+    if (out_rows <= 0 || out_cols <= 0) return;
+
+    float* d_input = nullptr;
+    float* d_kernel = nullptr;
+    float* d_output = nullptr;
+
+    CUDA_CHECK(cudaMalloc(&d_input, sizeof(float) * input_rows * input_cols));
+    CUDA_CHECK(cudaMalloc(&d_kernel, sizeof(float) * kernel_rows * kernel_cols));
+    CUDA_CHECK(cudaMalloc(&d_output, sizeof(float) * out_rows * out_cols));
+
+    CUDA_CHECK(cudaMemcpy(d_input, h_input, sizeof(float) * input_rows * input_cols,
+                          cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_kernel, h_kernel, sizeof(float) * kernel_rows * kernel_cols,
+                          cudaMemcpyHostToDevice));
+
+    gemm_conv2d_fused_launch(d_input, d_kernel, d_output, input_rows, input_cols, kernel_rows, kernel_cols);
 
     CUDA_CHECK(cudaMemcpy(h_output, d_output, sizeof(float) * out_rows * out_cols,
                           cudaMemcpyDeviceToHost));
