@@ -43,6 +43,7 @@ jobs:
           -B ${{ matrix.backend.build_dir }}
           -G Ninja
           -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_FLAGS="-DCL_TARGET_OPENCL_VERSION=300"
           ${{ matrix.backend.cmake_flag }}
 
       - name: Build ${{ matrix.backend.name }}
