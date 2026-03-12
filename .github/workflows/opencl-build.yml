@@ -1,0 +1,49 @@
+name: OpenCL Build
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-opencl:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        backend:
+          - name: opencl
+            cmake_flag: -DUSE_OPENCL=ON
+            build_dir: build/opencl
+          - name: opencl_cpp
+            cmake_flag: -DUSE_OPENCL_CPP=ON
+            build_dir: build/opencl_cpp
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            g++ \
+            ocl-icd-opencl-dev \
+            opencl-clhpp-headers
+
+      - name: Configure ${{ matrix.backend.name }}
+        run: >
+          cmake
+          -S .
+          -B ${{ matrix.backend.build_dir }}
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          ${{ matrix.backend.cmake_flag }}
+
+      - name: Build ${{ matrix.backend.name }}
+        run: cmake --build ${{ matrix.backend.build_dir }} --parallel
