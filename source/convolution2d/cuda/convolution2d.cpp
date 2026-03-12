@@ -45,7 +45,7 @@ static __global__ void conv2d_tiled(const float* input, const float* kernel, flo
     }
 }
 
-static void solve(const float* d_input, const float* d_kernel, float* d_output,
+static void conv2d_tiled_launch(const float* d_input, const float* d_kernel, float* d_output,
            int input_rows, int input_cols,
            int kernel_rows, int kernel_cols) {
     int out_rows = input_rows - kernel_rows + 1;
@@ -109,7 +109,7 @@ void convolution2d_gpu(const float* h_input, const float* h_kernel, float* h_out
     CUDA_CHECK(cudaMemcpy(d_kernel, h_kernel, sizeof(float) * kernel_rows * kernel_cols,
                           cudaMemcpyHostToDevice));
 
-    solve(d_input, d_kernel, d_output, input_rows, input_cols, kernel_rows, kernel_cols);
+    conv2d_tiled_launch(d_input, d_kernel, d_output, input_rows, input_cols, kernel_rows, kernel_cols);
 
     CUDA_CHECK(cudaMemcpy(h_output, d_output, sizeof(float) * out_rows * out_cols,
                           cudaMemcpyDeviceToHost));
