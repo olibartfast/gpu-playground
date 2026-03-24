@@ -3,8 +3,8 @@
 # Usage: ./submit.sh [OPTIONS] <path_to_kernel.py>
 #
 # Options:
-#   -g, --gpu         GPU model (e.g., B200, A100, H100)
-#   -l, --leaderboard Leaderboard name (e.g., nvfp4_gemm)
+#   -g, --gpu         GPU model (e.g., MI355X, B200, H100)
+#   -l, --leaderboard Leaderboard name (e.g., mxfp4-mm)
 #   -m, --mode        Submission mode: leaderboard or dev (default: leaderboard)
 #   -w, --workspace   Workspace directory name (default: gpu-mode)
 #   -h, --help        Show this help message
@@ -25,15 +25,15 @@ show_usage() {
     echo "Submit a kernel to a GPU MODE leaderboard"
     echo ""
     echo "Options:"
-    echo "  -g, --gpu <model>         GPU model (e.g., B200, A100, H100)"
-    echo "  -l, --leaderboard <name>  Leaderboard name (e.g., nvfp4_gemm)"
+    echo "  -g, --gpu <model>         GPU model (e.g., MI355X, B200, H100)"
+    echo "  -l, --leaderboard <name>  Leaderboard name (e.g., mxfp4-mm)"
     echo "  -m, --mode <mode>         Submission mode: leaderboard or dev (default: leaderboard)"
     echo "  -w, --workspace <dir>     Workspace directory name (default: gpu-mode)"
     echo "  -h, --help                Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 -g B200 -l nvfp4_gemm submissions/my_kernel.py"
-    echo "  $0 --gpu A100 --leaderboard grayscale --mode dev test_kernel.py"
+    echo "  $0 -g MI355X -l mxfp4-mm submissions/my_kernel.py"
+    echo "  $0 --gpu MI355X --leaderboard mla-py --mode dev test_kernel.py"
     echo ""
     echo "Environment variables:"
     echo "  WORKSPACE         - Workspace directory name"
