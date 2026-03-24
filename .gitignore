@@ -10,3 +10,4 @@ build
 **/*__pycache__
 .*
 !.github
+gpu-mode/popcorn-cli
