@@ -198,6 +198,7 @@ For detailed code examples and benchmarks, see [EXAMPLES.md](https://github.com/
 * [LeetGPU](https://leetgpu.com)
 * [reference-kernels](https://github.com/gpu-mode/reference-kernels) - Reference kernels for the KernelBot competitions on [discord.gg/gpumode](https://discord.gg/gpumode)
 * [Course on CUDA programming at Oxford Mathematical Institute](https://people.maths.ox.ac.uk/~gilesm/cuda/)
+* [Interactive GPU learning resource](https://brrrviz.com/)
 
 ### Frameworks and Libraries
 * [NVIDIA CUDA Samples](https://github.com/NVIDIA/cuda-samples)
