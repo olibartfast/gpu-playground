@@ -76,7 +76,7 @@ void myKernel_gpu(const float* h_input, float* h_output, int n) {
 }
 ```
 
-Key rules (see `docs/agentic_ai/cuda-copilot-rules.md` for the full list):
+Key rules (see `docs/cuda-agent-guide.md` for the full list):
 - Thread block size must be a multiple of 32; start with 128–256 threads/block.
 - Wrap every CUDA API call with `CUDA_CHECK`.
 - Call `cudaGetLastError()` after every kernel launch.

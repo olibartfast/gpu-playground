@@ -1,0 +1,9 @@
+---
+description: Keep repo docs, agent docs, and tool-specific guidance aligned.
+globs: "**/*.md,opencode.json,.codex/**/*.toml,.github/**/*.md,.claude/**/*.md"
+alwaysApply: false
+---
+
+Read `AGENTS.md` and `.agents/skills/docs-curator/skill.md` before responding.
+
+Follow all rules in `.agents/rules/` — they are mandatory, not advisory.
