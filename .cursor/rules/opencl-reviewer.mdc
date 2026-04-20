@@ -1,0 +1,9 @@
+---
+description: Review or improve OpenCL implementations for portability, correctness, and performance.
+globs: "source/**/*.cpp,source/**/*.h,CMakeLists.txt"
+alwaysApply: false
+---
+
+Read `AGENTS.md` and `.agents/skills/opencl-reviewer/skill.md` before responding.
+
+Follow all rules in `.agents/rules/` — they are mandatory, not advisory.

@@ -178,6 +178,11 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 
 ### Documentation
 - `docs/` - Development guidelines and best practices
+  - `agentic-getting-started.md` - Entry point for agentic workflows in this repo
+  - `claude-code-guide.md` - Claude Code workflow and expectations
+  - `codex-guide.md` - Codex workflow and expectations
+  - `cuda-agent-guide.md` - Consolidated CUDA optimization rules for coding agents
+  - `opencl-agent-guide.md` - Consolidated OpenCL optimization rules for coding agents
   - `EXAMPLES.md` - Detailed code examples and benchmarks
   - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
   - `adding-a-new-kernel.md` - How-To adding a new kernel to the project
@@ -190,6 +195,8 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 ## Examples
 
 For detailed code examples and benchmarks, see [EXAMPLES.md](https://github.com/olibartfast/gpu-playground/blob/master/docs/EXAMPLES.md).
+
+For agentic workflows and repo-specific coding-agent guidance, start with [AGENTS.md](AGENTS.md) and [docs/agentic-getting-started.md](docs/agentic-getting-started.md).
 
 ## Further Resources and References
 
