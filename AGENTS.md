@@ -86,6 +86,16 @@ Profile a CUDA binary:
 - CUDA optimization tasks: `docs/cuda-agent-guide.md`
 - OpenCL optimization tasks: `docs/opencl-agent-guide.md`
 
+## GPU MODE Competitions
+
+| Competition | Guide | Status | Hardware |
+|-------------|-------|--------|----------|
+| General setup | `gpu-mode/SETUP_GUIDE.md` | Ongoing | NVIDIA (B200) |
+| AMD Hackathon | `gpu-mode/AMD_HACKATHON_GUIDE.md` | Phase 2 (Finals) | AMD MI355X |
+| Humanity's Last Hackathon | `gpu-mode/HUMANITYS_LAST_HACKATHON_GUIDE.md` | Opens May 4, 2026 | Apple Silicon (Metal) |
+
+Submissions live in `gpu-mode/submissions/`. Tools in `gpu-mode/tools/`.
+
 ## Custom Agent Layout
 
 - Shared rules: `.agents/rules/`
