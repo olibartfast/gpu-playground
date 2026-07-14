@@ -139,7 +139,7 @@ gpu_playground/
 │   │   ├── cuda/              ← CUDA kernel + host-pointer wrapper
 │   │   ├── opencl/            ← OpenCL C API implementation
 │   │   └── opencl_cpp/        ← OpenCL C++ wrapper implementation
-│   └── ...                    ← same layout for all 14 kernels
+│   └── ...                    ← same layout for all 15 kernels
 ├── CMakeLists.txt             ← root build file; USE_OPENCL / USE_OPENCL_CPP + GPU_ENABLE_* flags
 ├── CMakePresets.json          ← build presets (default, native, ampere, release)
 ├── cuda_perf_analysis.sh      ← performance profiling script
@@ -169,6 +169,7 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 | `value_clipping` | Element-wise value clamping |
 | `rgb_to_grayscale` | RGB to grayscale conversion (Rec.601 luminance) |
 | `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) |
+| `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
