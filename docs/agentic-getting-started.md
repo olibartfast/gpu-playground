@@ -9,6 +9,10 @@ This repo now treats agentic documentation as a small, curated set instead of lo
 - Codex usage in [`codex-guide.md`](codex-guide.md)
 - CUDA optimization rules in [`cuda-agent-guide.md`](cuda-agent-guide.md)
 - OpenCL optimization rules in [`opencl-agent-guide.md`](opencl-agent-guide.md)
+- Planned OpenCL 3.1 work in
+  [`opencl-3.1-migration-plan.md`](opencl-3.1-migration-plan.md)
+- Planned LoRA linear work in
+  [`lora-linear-implementation-plan.md`](lora-linear-implementation-plan.md)
 
 ## First Session Checklist
 

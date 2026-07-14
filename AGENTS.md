@@ -12,6 +12,9 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
 - `CLAUDE.md` is the Claude Code-oriented repo guide.
 - `docs/agentic-getting-started.md` is the main entrypoint for agentic use in this repo.
 - `docs/cuda-agent-guide.md` and `docs/opencl-agent-guide.md` are the optimization rulebooks.
+- `docs/opencl-3.1-migration-plan.md` and
+  `docs/lora-linear-implementation-plan.md` track planned work; they are not
+  implemented kernel claims.
 - `.agents/rules/` contains mandatory shared rules for repo-local agents.
 - `.agents/skills/` contains reusable custom-agent definitions.
 - `.claude/agents/`, `.codex/agents/`, `.cursor/rules/`, `.github/agents/`, and `.opencode/agent/` project the same custom agents into each tool surface.
@@ -89,6 +92,8 @@ Profile a CUDA binary:
 - Working from Codex: `docs/codex-guide.md`
 - CUDA optimization tasks: `docs/cuda-agent-guide.md`
 - OpenCL optimization tasks: `docs/opencl-agent-guide.md`
+- OpenCL 3.1 migration work: `docs/opencl-3.1-migration-plan.md`
+- Planned LoRA linear work: `docs/lora-linear-implementation-plan.md`
 
 ## GPU MODE Competitions
 
