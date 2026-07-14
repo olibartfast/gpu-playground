@@ -20,10 +20,13 @@ Add or refactor kernels while preserving the repository's backend structure and 
 
 - A consistent kernel directory
 - Correct build wiring
-- Updated docs when structure changes
+- An updated `Readme.md` kernel inventory and usage entry
+- Updated supporting docs when structure or workflow changes
 
 ## Constraints
 
 - Follow `.agents/rules/backend_boundaries.md`
 - Follow `.agents/rules/kernel_harness_contract.md`
+- Treat the `Readme.md` update as part of the kernel implementation, not an
+  optional follow-up
 - Do not change unrelated kernels

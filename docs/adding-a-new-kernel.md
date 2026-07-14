@@ -291,7 +291,21 @@ cmake -DGPU_ENABLE_MY_KERNEL=OFF ..
 
 ---
 
-## Step 4 — Build and run
+## Step 4 — Update `Readme.md` (required)
+
+Every new kernel must update the root `Readme.md` in the same change. Update:
+
+- the project-structure kernel count or wording
+- the Kernel Implementations table, including backend coverage
+- any prerequisites or non-default build and run commands
+- links to a kernel-specific README when setup is more than one command
+
+Agents must not present a new kernel as complete until this documentation is
+accurate.
+
+---
+
+## Step 5 — Build and run
 
 ```bash
 # CUDA build (default: SM 7.0)
@@ -331,5 +345,6 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 - [ ] `main.cpp` — 3-way `#ifdef GPU_OPENCL_CPP_BACKEND` / `#elif GPU_OPENCL_BACKEND` / `#else` guard; calls only `*_cpu()` and `*_gpu()` wrappers; validates CPU vs GPU output
 - [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()` block; correct `set_source_files_properties` for CUDA path
 - [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` + `add_subdirectory`
+- [ ] Root `Readme.md` — kernel inventory, backend coverage, and required build/run instructions
 - [ ] Thread block size is a multiple of 32
 - [ ] All CUDA API calls wrapped in `CUDA_CHECK`; all OpenCL C calls wrapped in `CL_CHECK`; OpenCL C++ uses exception handling

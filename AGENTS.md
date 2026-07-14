@@ -32,6 +32,9 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
   - a correctness check, or
   - a clear note that validation was not run.
 - Prefer small, attributable optimization changes over multi-variable rewrites.
+- Every new kernel must update `Readme.md` in the same change. At minimum,
+  update the kernel inventory, backend coverage, and any required build or run
+  instructions.
 - Update docs when workflow or repo structure changes.
 
 ## Build And Run
@@ -76,7 +79,8 @@ Profile a CUDA binary:
 3. Build a correctness baseline before tuning.
 4. Change one optimization hypothesis at a time.
 5. Rebuild, rerun, and record what changed.
-6. If the task changes the workflow or conventions, update the matching docs.
+6. For a new kernel, update `Readme.md` before presenting the work as complete.
+7. If the task changes the workflow or conventions, update the matching docs.
 
 ## Which Guide To Read
 

@@ -132,6 +132,7 @@ gpu_playground/
 ├── source/                    ← all C++/CUDA/OpenCL source code
 │   ├── utils/                 ← shared utility libraries
 │   │   ├── cuda_helpers.h         ← CUDA_CHECK macro + getTime()
+│   │   ├── benchmark_helpers.h    ← reusable latency, throughput, bandwidth + speedup helpers
 │   │   ├── opencl_c_helpers.h     ← C API: CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
 │   │   └── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
 │   ├── gemm/                  ← each kernel: main.cpp + cuda/ + opencl/ + opencl_cpp/
@@ -139,7 +140,7 @@ gpu_playground/
 │   │   ├── cuda/              ← CUDA kernel + host-pointer wrapper
 │   │   ├── opencl/            ← OpenCL C API implementation
 │   │   └── opencl_cpp/        ← OpenCL C++ wrapper implementation
-│   └── ...                    ← same layout for all 15 kernels
+│   └── ...                    ← additional kernels; backend coverage is listed below
 ├── CMakeLists.txt             ← root build file; USE_OPENCL / USE_OPENCL_CPP + GPU_ENABLE_* flags
 ├── CMakePresets.json          ← build presets (default, native, ampere, release)
 ├── cuda_perf_analysis.sh      ← performance profiling script
@@ -150,7 +151,9 @@ gpu_playground/
 
 ### Kernel Implementations
 
-Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirectories for the backend implementations, and a shared `main.cpp` test harness that selects the backend at compile time.
+Portable kernels under `source/` have `cuda/`, `opencl/`, and `opencl_cpp/`
+subdirectories plus a shared `main.cpp` harness. CUDA-only examples are marked
+explicitly in the table.
 
 | Kernel | Description |
 |--------|-------------|
@@ -169,7 +172,21 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 | `value_clipping` | Element-wise value clamping |
 | `rgb_to_grayscale` | RGB to grayscale conversion (Rec.601 luminance) |
 | `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) |
+| `deep_learning_inference` | Small feed-forward CNN (RGBA→grayscale): reference vs. candidate optimization exercise. CUDA-only. Requires `python source/deep_learning_inference/generate_weights.py` before first run. Modes: `benchmark`, `image_infer <in> <out>`, `correctness <img>`. See `source/deep_learning_inference/README.md` for setup and run steps. |
 | `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
+
+Run the LeetGPU-compatible FP16 functional cases and its 100-million-element
+performance shape with:
+
+```bash
+./build/default/source/fp16_dot_product/fp16_dot_product
+./build/default/source/fp16_dot_product/fp16_dot_product --performance
+```
+
+The performance output distinguishes CPU throughput, GPU kernel-only
+throughput, and GPU end-to-end throughput. Shared calculations for GFLOP/s,
+GB/s, and speedup live in `source/utils/benchmark_helpers.h` and can be reused
+by other synchronous kernel harnesses.
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
