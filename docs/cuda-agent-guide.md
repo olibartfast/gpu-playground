@@ -67,10 +67,13 @@ This is the consolidated CUDA optimization guide for agentic work in this repo. 
 
 ## Practical Profiling Order
 
-1. Use `./cuda_perf_analysis.sh <binary>` for a first pass.
-2. Use Nsight Systems for launch gaps and stream overlap.
-3. Use Nsight Compute for throughput, occupancy, stalls, and instruction mix.
-4. Use Compute Sanitizer before and after major rewrites.
+1. Use `benchmark_helpers.h` in CPU/GPU harnesses when reporting comparable
+   latency, throughput, bandwidth, or speedup. State whether GPU timing is
+   kernel-only or end-to-end.
+2. Use `./cuda_perf_analysis.sh <binary>` for a first profiler pass.
+3. Use Nsight Systems for launch gaps and stream overlap.
+4. Use Nsight Compute for throughput, occupancy, stalls, and instruction mix.
+5. Use Compute Sanitizer before and after major rewrites.
 
 ## Review Checklist
 

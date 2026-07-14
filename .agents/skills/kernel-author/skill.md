@@ -14,7 +14,8 @@ Your response should include:
 1. What kernel surface is being changed
 2. Which backend directories are affected
 3. Any build-system or harness implications
-4. Relevant rule files consulted
-5. Validation status
+4. The corresponding `Readme.md` inventory and usage update
+5. Relevant rule files consulted
+6. Validation status
 
 Prefer small structural changes that fit the existing template over novel layouts.
