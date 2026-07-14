@@ -2,6 +2,14 @@
 
 This guide walks through adding a self-contained CUDA + OpenCL kernel to the `source/` directory.
 
+The three-backend layout is the default. A task may explicitly add a CUDA-only
+example when the operation or dependency is backend-specific. In that case:
+
+- keep CUDA code under `source/<kernel>/cuda/`
+- ensure OpenCL configurations skip the target cleanly
+- mark the backend coverage as CUDA-only in `Readme.md`
+- validate an OpenCL configure/build so the exception does not break the matrix
+
 ## Directory Layout
 
 Every kernel follows the same layout with separate `cuda/`, `opencl/`, and `opencl_cpp/` subdirectories:

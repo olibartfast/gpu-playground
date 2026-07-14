@@ -1,7 +1,12 @@
 # LoRA Linear CUDA Kernel Implementation Plan
 
+Status: planned. There is no `lora_linear` source directory, CMake target, or
+validated performance result yet.
+
 ## Overview
-This document outlines the implementation of a CUDA kernel for LoRA (Low-Rank Adaptation) linear transformation, optimized for performance following the cornerstone principles.
+This document outlines a possible CUDA kernel for LoRA (Low-Rank Adaptation)
+linear transformation. All tiling and concurrency choices below are hypotheses
+that require correctness and profiler validation during implementation.
 
 ## Reference
 - LoRA Paper: [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)
@@ -38,7 +43,7 @@ The algorithm decomposes into three operations:
 
 1. **Tiled GEMM Kernel** (`tiled_gemm_NT`):
    - Implements matrix multiplication for NT layout (no-transpose × transpose)
-   - Uses 32x32 tile size for optimal occupancy
+   - Starts with a 32x32 tile as a measurement candidate
    - Includes shared memory padding to avoid bank conflicts
    - Features coalesced memory access patterns
    - Optional warp-level reduction optimization
@@ -63,7 +68,8 @@ The algorithm decomposes into three operations:
 - Validation of all CUDA API calls and kernel launches
 
 ## Performance Considerations
-- Tile size of 32 matches warp width for optimal memory access patterns
+- A tile size of 32 aligns with warp width but still requires occupancy and
+  memory-throughput measurement
 - Stream parallelism hides latency of smaller GEMM operations
 - Coalesced global memory access throughout
 - Bank conflict avoidance via shared memory padding

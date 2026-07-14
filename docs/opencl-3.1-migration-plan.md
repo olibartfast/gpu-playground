@@ -2,6 +2,9 @@
 
 This plan tracks a staged update of the repository's OpenCL C API and OpenCL C++ wrapper backends to OpenCL 3.1 while preserving the existing backend split and correctness harnesses.
 
+Status: planning only. The repository has not yet changed its shared OpenCL
+target version to 3.1.
+
 ## References
 
 - Khronos OpenCL 3.1 announcement: https://www.khronos.org/blog/opencl-3.1-is-here
@@ -16,6 +19,8 @@ This plan tracks a staged update of the repository's OpenCL C API and OpenCL C++
 - Build and documentation changes needed to expose OpenCL 3.1 support clearly.
 
 CUDA kernels and backend-agnostic public interfaces are out of scope unless a narrow compatibility edit is required.
+CUDA-only examples (`deep_learning_inference` and `fp16_dot_product`) are not
+part of the OpenCL migration unless a separate task first adds an OpenCL backend.
 
 ## Migration Strategy
 
@@ -37,7 +42,7 @@ CUDA kernels and backend-agnostic public interfaces are out of scope unless a na
 4. Migrate kernels incrementally.
    - Start with simple elementwise kernels: `reverse_array`, `value_clipping`, `sigmoid`, `silu`, `geglu`, `swiglu`.
    - Move next to layout and bandwidth kernels: `interleave_arrays`, `rgb_to_grayscale`, `matrix_transpose`.
-   - Finish with higher-risk kernels: `gemm`, `matrix_mul`, `softmax`, `prefix_sum`, `spmv`, `convolution2d`, `deep_learning_inference`.
+   - Finish with higher-risk kernels: `gemm`, `matrix_mul`, `softmax`, `prefix_sum`, `spmv`, `convolution2d`.
 
 5. Guard optional kernel features.
    - Use `__opencl_c_*` feature macros for optional OpenCL C capabilities.
@@ -58,6 +63,7 @@ CUDA kernels and backend-agnostic public interfaces are out of scope unless a na
 ## Completion Criteria
 
 - Shared C API and C++ wrapper helpers target OpenCL 3.1 headers without breaking older fallback execution for source-built kernels.
-- Every OpenCL backend builds in both `USE_OPENCL=ON` and `USE_OPENCL_CPP=ON` modes where implemented.
+- Every implemented OpenCL backend builds in both `USE_OPENCL=ON` and
+  `USE_OPENCL_CPP=ON` modes; CUDA-only examples remain cleanly excluded.
 - Every migrated kernel passes its existing correctness harness.
 - Any OpenCL 3.1-only code path has explicit host capability checks and a documented fallback or failure mode.

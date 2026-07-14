@@ -1,6 +1,8 @@
 # OpenCL Agent Guide
 
 This is the consolidated OpenCL optimization guide for agentic work in this repo.
+For staged OpenCL 3.1 work and its completion criteria, also read
+[`opencl-3.1-migration-plan.md`](opencl-3.1-migration-plan.md).
 
 ## Operating Loop
 

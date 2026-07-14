@@ -188,6 +188,11 @@ throughput, and GPU end-to-end throughput. Shared calculations for GFLOP/s,
 GB/s, and speedup live in `source/utils/benchmark_helpers.h` and can be reused
 by other synchronous kernel harnesses.
 
+### Planned Kernels
+
+- `lora_linear` is design-only and has no build target yet. See the
+  [LoRA linear implementation plan](docs/lora-linear-implementation-plan.md).
+
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
   - `SETUP_GUIDE.md` - Complete guide for participating in GPU MODE competitions
@@ -201,6 +206,8 @@ by other synchronous kernel harnesses.
   - `codex-guide.md` - Codex workflow and expectations
   - `cuda-agent-guide.md` - Consolidated CUDA optimization rules for coding agents
   - `opencl-agent-guide.md` - Consolidated OpenCL optimization rules for coding agents
+  - `opencl-3.1-migration-plan.md` - Staged OpenCL 3.1 migration scope and completion criteria
+  - `lora-linear-implementation-plan.md` - Planned CUDA LoRA linear kernel design
   - `EXAMPLES.md` - Detailed code examples and benchmarks
   - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
   - `adding-a-new-kernel.md` - How-To adding a new kernel to the project
