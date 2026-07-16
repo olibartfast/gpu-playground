@@ -36,6 +36,10 @@ inline double gigabytes_per_second(double bytes, double milliseconds) {
     return bytes / (milliseconds * 1.0e6);
 }
 
+inline double million_items_per_second(double items, double milliseconds) {
+    return items / (milliseconds * 1.0e3);
+}
+
 inline double speedup(double baseline_milliseconds,
                       double candidate_milliseconds) {
     return baseline_milliseconds / candidate_milliseconds;
