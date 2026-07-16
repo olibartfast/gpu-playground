@@ -174,6 +174,7 @@ explicitly in the table.
 | `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) |
 | `deep_learning_inference` | Small feed-forward CNN (RGBA→grayscale): reference vs. candidate optimization exercise. CUDA-only. Requires `python source/deep_learning_inference/generate_weights.py` before first run. Modes: `benchmark`, `image_infer <in> <out>`, `correctness <img>`. See `source/deep_learning_inference/README.md` for setup and run steps. |
 | `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
+| `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (CUDA-only, LeetGPU challenge 25) |
 
 Run the LeetGPU-compatible FP16 functional cases and its 100-million-element
 performance shape with:
@@ -183,10 +184,19 @@ performance shape with:
 ./build/default/source/fp16_dot_product/fp16_dot_product --performance
 ```
 
+Run the LeetGPU challenge 25 categorical-cross-entropy functional cases and
+its `N=10,000`, `C=1,000` performance shape with:
+
+```bash
+./build/default/source/categorical_cross_entropy/categorical_cross_entropy
+./build/default/source/categorical_cross_entropy/categorical_cross_entropy --performance
+```
+
 The performance output distinguishes CPU throughput, GPU kernel-only
 throughput, and GPU end-to-end throughput. Shared calculations for GFLOP/s,
-GB/s, and speedup live in `source/utils/benchmark_helpers.h` and can be reused
-by other synchronous kernel harnesses.
+GB/s, million items/s, and speedup live in
+`source/utils/benchmark_helpers.h` and can be reused by other synchronous
+kernel harnesses.
 
 ### Planned Kernels
 
