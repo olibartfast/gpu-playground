@@ -147,6 +147,18 @@ Rule of thumb: tile only when data reuse is high enough to offset barrier and lo
 - Do not hard-code sub-group width assumptions. Query with `get_sub_group_size()` when needed.
 - Prefer predication-friendly code paths.
 
+## 6b) Measure Like a Benchmark, Not Like a Stopwatch
+
+The first call into an OpenCL path pays context creation and `clBuildProgram`, which routinely costs more
+than the kernel it is about to run. Timing one call therefore measures the build, not the kernel.
+
+Use `source/utils/benchmark.h` (backend-agnostic — it pulls in no OpenCL headers): several untimed
+warm-up calls, then repeated timed iterations reported as median plus spread. Compare on medians.
+If the output buffer is also an input, pass a `reset` to `benchmarkWithReset` so every iteration starts
+from the same state, with the reset excluded from the timed region.
+
+See §1 of `cuda_best_practice_agent_style.md` for the full protocol and examples.
+
 ## 7) Practical Profiling Workflow
 
 - Use OpenCL event profiling or timeline tools to check enqueue overhead, launch gaps, host-device overlap, and queue concurrency.
