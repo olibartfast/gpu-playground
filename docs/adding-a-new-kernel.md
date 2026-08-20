@@ -220,24 +220,23 @@ The test harness selects the backend at compile time and only calls the backend-
 #include "cuda/my_kernel.h"
 #endif
 #include <cstdio>
-#include <chrono>
 #include <cmath>
 #include <vector>
+#include "benchmark.h"   // from source/utils/, available to all three backends
 
 int main() {
     const int N = 1 << 20;
     std::vector<float> h_in(N), h_out_cpu(N), h_out_gpu(N);
     for (int i = 0; i < N; i++) h_in[i] = (float)i;
 
-    auto t0 = std::chrono::steady_clock::now();
-    myKernelCpu(h_in.data(), h_out_cpu.data(), N);
-    auto t1 = std::chrono::steady_clock::now();
-    printf("CPU: %.3f ms\n", std::chrono::duration<double, std::milli>(t1 - t0).count());
-
-    auto g0 = std::chrono::steady_clock::now();
-    myKernel_gpu(h_in.data(), h_out_gpu.data(), N);
-    auto g1 = std::chrono::steady_clock::now();
-    printf("GPU: %.3f ms\n", std::chrono::duration<double, std::milli>(g1 - g0).count());
+    // Never time a single call: the first invocation pays CUDA context creation
+    // or OpenCL program build, which can dwarf the kernel itself. benchmark()
+    // discards warm-up iterations and reports a distribution over the rest.
+    BenchResult cpu_bench = benchmark([&] { myKernelCpu(h_in.data(), h_out_cpu.data(), N); });
+    BenchResult gpu_bench = benchmark([&] { myKernel_gpu(h_in.data(), h_out_gpu.data(), N); });
+    printBench("CPU:", cpu_bench);
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     int errors = 0;
     for (int i = 0; i < N; i++)
@@ -246,6 +245,11 @@ int main() {
     return errors != 0;
 }
 ```
+
+If the kernel writes into a buffer it also reads (an in-place kernel, or GEMM's `beta * C` term), use
+`benchmarkWithReset(fn, reset)` instead — `reset` restores the buffer before every call and is not timed.
+Without it, each iteration measures different work and the correctness check afterwards compares against
+an accumulated result rather than a single clean pass.
 
 ---
 
@@ -329,6 +333,7 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 - [ ] `opencl_cpp/<kernel>.h` — `#pragma once`, same backend-agnostic signatures as `opencl/<kernel>.h`
 - [ ] `opencl_cpp/<kernel>.cpp` — kernel string literal, `opencl_helpers.h`, `cl::` RAII objects, `try/catch (cl::Error)` for error handling
 - [ ] `main.cpp` — 3-way `#ifdef GPU_OPENCL_CPP_BACKEND` / `#elif GPU_OPENCL_BACKEND` / `#else` guard; calls only `*_cpu()` and `*_gpu()` wrappers; validates CPU vs GPU output
+- [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` in `source/utils/benchmark.h`, not a bare `steady_clock` pair
 - [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()` block; correct `set_source_files_properties` for CUDA path
 - [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` + `add_subdirectory`
 - [ ] Thread block size is a multiple of 32
