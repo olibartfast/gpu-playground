@@ -6,7 +6,7 @@
 #include "cuda/interleave.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <iomanip>
 #include <vector>
@@ -48,25 +48,25 @@ int main() {
     print(B.data(), N, "Array B");
     #endif
 
-    auto start_cpu = std::chrono::steady_clock::now();
-    interleave_cpu(A.data(), B.data(), output_cpu.data(), N);
-    auto end_cpu = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        interleave_cpu(A.data(), B.data(), output_cpu.data(), N);
+    });
 
     #ifdef PRINT
     print(output_cpu.data(), 2 * N, "CPU Interleave");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end_cpu - start_cpu).count()
-              << " ms" << std::endl << std::endl;
+    printBench("CPU:", cpu_bench);
 
-    auto start_gpu = std::chrono::steady_clock::now();
-    interleave_gpu(A.data(), B.data(), output_gpu.data(), N);
-    auto end_gpu = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        interleave_gpu(A.data(), B.data(), output_gpu.data(), N);
+    });
 
     #ifdef PRINT
     print(output_gpu.data(), 2 * N, "GPU Interleave");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end_gpu - start_gpu).count()
-              << " ms" << std::endl << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+    std::cout << std::endl;
 
     bool results_match = true;
     for (int i = 0; i < 2 * N; i++) {

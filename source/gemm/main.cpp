@@ -6,9 +6,10 @@
 #include "cuda/gemm.h"
 #endif
 #include <stdio.h>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 
 void printMatrix(const float* matrix, int rows, int cols, const char* name) {
     printf("%s:\n", name);
@@ -60,24 +61,27 @@ int main() {
     printMatrix(h_B1, K1, N1, "Matrix B (3x2)");
     printf("α = %.1f, β = %.1f\n\n", alpha1, beta1);
 
-    auto t0 = std::chrono::steady_clock::now();
-    gemmCpu(h_A1, h_B1, h_C1_cpu, alpha1, beta1, M1, N1, K1);
-    auto t1 = std::chrono::steady_clock::now();
-    double cpu_time = std::chrono::duration<double>(t1 - t0).count();
+    // GEMM reads C for the beta * C term, so each iteration must restart from
+    // the same C -- otherwise repeated calls accumulate into their own output.
+    float h_C1_seed[4] = {};
+    auto reset_C1_cpu = [&] { std::copy(h_C1_seed, h_C1_seed + M1 * N1, h_C1_cpu); };
+    auto reset_C1_gpu = [&] { std::copy(h_C1_seed, h_C1_seed + M1 * N1, h_C1_gpu); };
 
-    auto g0 = std::chrono::steady_clock::now();
-    gemmGPU(h_A1, h_B1, h_C1_gpu, alpha1, beta1, M1, N1, K1);
-    auto g1 = std::chrono::steady_clock::now();
-    double gpu_time = std::chrono::duration<double>(g1 - g0).count();
+    BenchResult cpu_bench = benchmarkWithReset(
+        [&] { gemmCpu(h_A1, h_B1, h_C1_cpu, alpha1, beta1, M1, N1, K1); }, reset_C1_cpu);
+    BenchResult gpu_bench = benchmarkWithReset(
+        [&] { gemmGPU(h_A1, h_B1, h_C1_gpu, alpha1, beta1, M1, N1, K1); }, reset_C1_gpu);
 
     printMatrix(h_C1_cpu, M1, N1, "Matrix C (CPU Result)");
     printMatrix(h_C1_gpu, M1, N1, "Matrix C (GPU Result)");
     printf("Expected: [[58, 64], [139, 154]]\n\n");
     printf("Comparing CPU and GPU results...\n");
-    if (compareResults(h_C1_cpu, h_C1_gpu, M1 * N1)) printf("Results match!\n");
-    else printf("Results do NOT match!\n");
-    printf("\nExecution Times:\nCPU Time: %f seconds\nGPU Time: %f seconds\n", cpu_time, gpu_time);
-    if (gpu_time > 0) printf("Speedup (CPU Time / GPU Time): %f\n", cpu_time / gpu_time);
+    bool small_ok = compareResults(h_C1_cpu, h_C1_gpu, M1 * N1);
+    printf("%s\n", small_ok ? "Results match!" : "Results do NOT match!");
+    printf("\nExecution Times:\n");
+    printBench("CPU:", cpu_bench);
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     printf("\n========================================\n\n");
 
@@ -91,34 +95,54 @@ int main() {
     float* h_B2 = new float[K2 * N2];
     float* h_C2_cpu = new float[M2 * N2];
     float* h_C2_gpu = new float[M2 * N2];
+    float* h_C2_seed = new float[M2 * N2];
 
-    srand(42);
-    for (int i = 0; i < M2 * K2; i++) h_A2[i] = (float)(rand() % 100) / 50.0f - 1.0f;
-    for (int i = 0; i < K2 * N2; i++) h_B2[i] = (float)(rand() % 100) / 50.0f - 1.0f;
-    for (int i = 0; i < M2 * N2; i++) {
-        float val = (float)(rand() % 100) / 50.0f - 1.0f;
-        h_C2_cpu[i] = h_C2_gpu[i] = val;
-    }
     printf("M=%d, K=%d, N=%d\nα = %.1f, β = %.1f\n\n", M2, K2, N2, alpha2, beta2);
 
-    t0 = std::chrono::steady_clock::now();
-    gemmCpu(h_A2, h_B2, h_C2_cpu, alpha2, beta2, M2, N2, K2);
-    t1 = std::chrono::steady_clock::now();
-    cpu_time = std::chrono::duration<double>(t1 - t0).count();
+    // A single random draw hides boundary bugs, so validate over several seeds.
+    // The last trial leaves its data in place for the benchmark below.
+    const unsigned seeds[] = {42u, 1337u, 2024u, 7u, 99u};
+    const int trials = (int)(sizeof(seeds) / sizeof(seeds[0]));
+    bool large_ok = true;
+    for (int trial = 0; trial < trials; trial++) {
+        srand(seeds[trial]);
+        for (int i = 0; i < M2 * K2; i++) h_A2[i] = (float)(rand() % 100) / 50.0f - 1.0f;
+        for (int i = 0; i < K2 * N2; i++) h_B2[i] = (float)(rand() % 100) / 50.0f - 1.0f;
+        for (int i = 0; i < M2 * N2; i++) {
+            float val = (float)(rand() % 100) / 50.0f - 1.0f;
+            h_C2_cpu[i] = h_C2_gpu[i] = h_C2_seed[i] = val;
+        }
 
-    g0 = std::chrono::steady_clock::now();
-    gemmGPU(h_A2, h_B2, h_C2_gpu, alpha2, beta2, M2, N2, K2);
-    g1 = std::chrono::steady_clock::now();
-    gpu_time = std::chrono::duration<double>(g1 - g0).count();
+        gemmCpu(h_A2, h_B2, h_C2_cpu, alpha2, beta2, M2, N2, K2);
+        gemmGPU(h_A2, h_B2, h_C2_gpu, alpha2, beta2, M2, N2, K2);
+
+        printf("Trial %d/%d (seed %u):\n", trial + 1, trials, seeds[trial]);
+        bool ok = compareResults(h_C2_cpu, h_C2_gpu, M2 * N2);
+        printf("  -> %s\n\n", ok ? "PASSED" : "FAILED");
+        large_ok = large_ok && ok;
+    }
 
     printMatrix(h_C2_cpu, M2, N2, "Matrix C (CPU Result) - First 4x4");
     printMatrix(h_C2_gpu, M2, N2, "Matrix C (GPU Result) - First 4x4");
-    printf("Comparing CPU and GPU results...\n");
-    if (compareResults(h_C2_cpu, h_C2_gpu, M2 * N2)) printf("Test PASSED!\n");
-    else printf("Test FAILED!\n");
-    printf("\nExecution Times:\nCPU Time: %f seconds\nGPU Time: %f seconds\n", cpu_time, gpu_time);
-    printf("Speedup (CPU Time / GPU Time): %.2fx\n", cpu_time / gpu_time);
+    printf("Large test: %s\n", large_ok ? "PASSED" : "FAILED");
 
-    delete[] h_A2; delete[] h_B2; delete[] h_C2_cpu; delete[] h_C2_gpu;
-    return 0;
+    // The naive CPU reference costs ~200 ms per call here, so it gets a shorter
+    // protocol; the GPU path -- the one worth measuring precisely -- keeps the default.
+    cpu_bench = benchmarkWithReset(
+        [&] { gemmCpu(h_A2, h_B2, h_C2_cpu, alpha2, beta2, M2, N2, K2); },
+        [&] { std::copy(h_C2_seed, h_C2_seed + M2 * N2, h_C2_cpu); }, 1, 3);
+    gpu_bench = benchmarkWithReset(
+        [&] { gemmGPU(h_A2, h_B2, h_C2_gpu, alpha2, beta2, M2, N2, K2); },
+        [&] { std::copy(h_C2_seed, h_C2_seed + M2 * N2, h_C2_gpu); });
+
+    printf("\nExecution Times:\n");
+    printBench("CPU:", cpu_bench);
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+
+    delete[] h_A2; delete[] h_B2; delete[] h_C2_cpu; delete[] h_C2_gpu; delete[] h_C2_seed;
+
+    bool ok = small_ok && large_ok;
+    printf("\nOverall result: %s\n", ok ? "PASSED" : "FAILED");
+    return ok ? 0 : 1;
 }

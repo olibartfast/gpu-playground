@@ -6,7 +6,7 @@
 #include "cuda/softmax.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <iomanip>
 #include <vector>
 #include <cmath>
@@ -40,9 +40,9 @@ int main() {
     #endif
 
     // --- CPU softmax ---
-    auto start_cpu = std::chrono::steady_clock::now();
-    softmax_cpu(input.data(), output_cpu.data(), N);
-    auto end_cpu = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        softmax_cpu(input.data(), output_cpu.data(), N);
+    });
 
     #ifdef PRINT
     print(output_cpu.data(), N, "CPU softmax");
@@ -50,12 +50,13 @@ int main() {
     float cpu_sum = 0.0f;
     for (int i = 0; i < N; i++) cpu_sum += output_cpu[i];
     std::cout << "CPU softmax sum: " << std::fixed << std::setprecision(6) << cpu_sum << std::endl;
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end_cpu - start_cpu).count() << " ms\n\n";
+    printBench("CPU:", cpu_bench);
+    std::cout << std::endl;
 
     // --- GPU softmax ---
-    auto start_gpu = std::chrono::steady_clock::now();
-    softmax_gpu(input.data(), output_gpu.data(), N);
-    auto end_gpu = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        softmax_gpu(input.data(), output_gpu.data(), N);
+    });
 
     #ifdef PRINT
     print(output_gpu.data(), N, "GPU softmax");
@@ -63,7 +64,9 @@ int main() {
     float gpu_sum = 0.0f;
     for (int i = 0; i < N; i++) gpu_sum += output_gpu[i];
     std::cout << "GPU softmax sum: " << std::fixed << std::setprecision(6) << gpu_sum << std::endl;
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end_gpu - start_gpu).count() << " ms\n\n";
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+    std::cout << std::endl;
 
     // --- Verification ---
     bool results_match = true;

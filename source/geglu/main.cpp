@@ -6,7 +6,7 @@
 #include "cuda/geglu.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <vector>
 
@@ -20,17 +20,16 @@ int main(int argc, char const *argv[])
         input[i] = (float)(i % 100);
     }
 
-    auto start_cpu = std::chrono::steady_clock::now();
-    geglu_cpu(input.data(), output_cpu.data(), N/2);
-    auto end_cpu = std::chrono::steady_clock::now();
-    std::chrono::duration<double, std::milli> duration_cpu = end_cpu - start_cpu;
-    std::cout << "CPU duration: " << duration_cpu.count() << " ms" << std::endl;
+    BenchResult cpu_bench = benchmark([&] {
+        geglu_cpu(input.data(), output_cpu.data(), N/2);
+    });
+    printBench("CPU:", cpu_bench);
 
-    auto start_gpu = std::chrono::steady_clock::now();
-    geglu_gpu(input.data(), output_gpu.data(), N/2);
-    auto end_gpu = std::chrono::steady_clock::now();
-    std::chrono::duration<double, std::milli> duration_gpu = end_gpu - start_gpu;
-    std::cout << "GPU duration: " << duration_gpu.count() << " ms" << std::endl;
+    BenchResult gpu_bench = benchmark([&] {
+        geglu_gpu(input.data(), output_gpu.data(), N/2);
+    });
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     for(int i=0; i<N/2; i++) {
         if(fabs(output_cpu[i] - output_gpu[i]) > 1e-5) {

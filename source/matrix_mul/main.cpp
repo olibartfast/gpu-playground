@@ -6,7 +6,7 @@
 #include "cuda/matrix_mul.h"
 #endif
 #include <stdio.h>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 
 #define N 4
@@ -39,15 +39,8 @@ int main() {
     };
     float h_C_cpu[N * N], h_C_gpu[N * N];
 
-    auto t0 = std::chrono::steady_clock::now();
-    matrixMulCPU(h_A, h_B, h_C_cpu, n);
-    auto t1 = std::chrono::steady_clock::now();
-    double cpu_time = std::chrono::duration<double>(t1 - t0).count();
-
-    auto g0 = std::chrono::steady_clock::now();
-    matrixMulGPU(h_A, h_B, h_C_gpu, n);
-    auto g1 = std::chrono::steady_clock::now();
-    double gpu_time = std::chrono::duration<double>(g1 - g0).count();
+    BenchResult cpu_bench = benchmark([&] { matrixMulCPU(h_A, h_B, h_C_cpu, n); });
+    BenchResult gpu_bench = benchmark([&] { matrixMulGPU(h_A, h_B, h_C_gpu, n); });
 
     printf("Matrix A:\n"); printMatrix(h_A, n);
     printf("\nMatrix B:\n"); printMatrix(h_B, n);
@@ -59,8 +52,8 @@ int main() {
     else printf("Results do NOT match!\n");
 
     printf("\nExecution Times:\n");
-    printf("CPU Time: %f seconds\n", cpu_time);
-    printf("GPU Time: %f seconds\n", gpu_time);
-    if (gpu_time > 0) printf("Speedup (CPU Time / GPU Time): %f\n", cpu_time / gpu_time);
+    printBench("CPU:", cpu_bench);
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
     return 0;
 }

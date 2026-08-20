@@ -6,7 +6,7 @@
 #include "cuda/clip.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <iomanip>
 #include <vector>
@@ -45,25 +45,25 @@ int main() {
     std::cout << "Clipping range: [" << lo << ", " << hi << "]" << std::endl;
     #endif
 
-    auto start_cpu = std::chrono::steady_clock::now();
-    clip_cpu(input.data(), output_cpu.data(), N, lo, hi);
-    auto end_cpu = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        clip_cpu(input.data(), output_cpu.data(), N, lo, hi);
+    });
 
     #ifdef PRINT
     print(output_cpu.data(), N, "CPU Clip");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end_cpu - start_cpu).count()
-              << " ms" << std::endl << std::endl;
+    printBench("CPU:", cpu_bench);
 
-    auto start_gpu = std::chrono::steady_clock::now();
-    clip_gpu(input.data(), output_gpu.data(), N, lo, hi);
-    auto end_gpu = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        clip_gpu(input.data(), output_gpu.data(), N, lo, hi);
+    });
 
     #ifdef PRINT
     print(output_gpu.data(), N, "GPU Clip");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end_gpu - start_gpu).count()
-              << " ms" << std::endl << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+    std::cout << std::endl;
 
     bool results_match = true;
     for (int i = 0; i < N; i++) {
