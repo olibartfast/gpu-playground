@@ -6,7 +6,7 @@
 #include "cuda/swiglu.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <iomanip>
 #include <vector>
@@ -42,25 +42,25 @@ int main() {
     print(input.data(), N, "Input");
     #endif
 
-    auto start_cpu = std::chrono::steady_clock::now();
-    swiglu_cpu(input.data(), output_cpu.data(), N);
-    auto end_cpu = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        swiglu_cpu(input.data(), output_cpu.data(), N);
+    });
 
     #ifdef PRINT
     print(output_cpu.data(), N/2, "CPU SwiGLU");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end_cpu - start_cpu).count()
-              << " ms" << std::endl << std::endl;
+    printBench("CPU:", cpu_bench);
 
-    auto start_gpu = std::chrono::steady_clock::now();
-    swiglu_gpu(input.data(), output_gpu.data(), N);
-    auto end_gpu = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        swiglu_gpu(input.data(), output_gpu.data(), N);
+    });
 
     #ifdef PRINT
     print(output_gpu.data(), N/2, "GPU SwiGLU");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end_gpu - start_gpu).count()
-              << " ms" << std::endl << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+    std::cout << std::endl;
 
     bool results_match = true;
     for (int i = 0; i < N/2; i++) {

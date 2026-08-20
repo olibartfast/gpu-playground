@@ -6,7 +6,7 @@
 #include "cuda/rgb_to_grayscale.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cstdlib>
 #include <cmath>
 #include <algorithm>
@@ -47,21 +47,22 @@ int main() {
     print(input, total_pixels, 3, "Input RGB");
     #endif
 
-    auto start = std::chrono::steady_clock::now();
-    rgb_to_grayscale_cpu(input, output_cpu, total_pixels);
-    auto end = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        rgb_to_grayscale_cpu(input, output_cpu, total_pixels);
+    });
     #ifdef PRINT
     print(output_cpu, total_pixels, "CPU grayscale");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("CPU:", cpu_bench);
 
-    start = std::chrono::steady_clock::now();
-    rgb_to_grayscale_gpu(input, output_gpu, total_pixels);
-    end = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        rgb_to_grayscale_gpu(input, output_gpu, total_pixels);
+    });
     #ifdef PRINT
     print(output_gpu, total_pixels, "GPU grayscale");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     float max_diff = 0.0f;
     for (int i = 0; i < total_pixels; i++) {
