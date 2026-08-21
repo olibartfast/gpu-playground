@@ -6,7 +6,7 @@
 #include "cuda/spmv.h"
 #endif
 #include <cstdio>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
@@ -61,24 +61,19 @@ int main() {
     printf("Non-zero elements: %d (%.1f%% sparse)\n\n", nnz1,
            100.0f * (1.0f - static_cast<float>(nnz1) / (M1 * N1)));
 
-    auto t0 = std::chrono::steady_clock::now();
-    spmvCpu(h_A1, h_x1, h_y1_cpu, M1, N1);
-    auto t1 = std::chrono::steady_clock::now();
-    double cpu_time = std::chrono::duration<double>(t1 - t0).count();
-
-    auto g0 = std::chrono::steady_clock::now();
-    spmvGPU(h_A1, h_x1, h_y1_gpu, M1, N1);
-    auto g1 = std::chrono::steady_clock::now();
-    double gpu_time = std::chrono::duration<double>(g1 - g0).count();
+    BenchResult cpu_bench = benchmark([&] { spmvCpu(h_A1, h_x1, h_y1_cpu, M1, N1); });
+    BenchResult gpu_bench = benchmark([&] { spmvGPU(h_A1, h_x1, h_y1_gpu, M1, N1); });
 
     printVector(h_y1_cpu, M1, "Vector y (CPU Result)");
     printVector(h_y1_gpu, M1, "Vector y (GPU Result)");
     printf("Expected: [7.00, 6.00, 19.00]\n\n");
     printf("Comparing CPU and GPU results...\n");
-    printf("%s\n", compareResults(h_y1_cpu, h_y1_gpu, M1) ? "Results match!" : "Results do NOT match!");
-    printf("\nCPU Time: %f seconds\n", cpu_time);
-    printf("GPU Time: %f seconds\n", gpu_time);
-    if (gpu_time > 0) printf("Speedup: %.2fx\n", cpu_time / gpu_time);
+    bool small_ok = compareResults(h_y1_cpu, h_y1_gpu, M1);
+    printf("%s\n", small_ok ? "Results match!" : "Results do NOT match!");
+    printf("\n");
+    printBench("CPU:", cpu_bench);
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     printf("\n========================================\n\n");
 
@@ -92,41 +87,53 @@ int main() {
     float* h_y2_cpu = new float[M2];
     float* h_y2_gpu = new float[M2];
 
-    srand(42);
+    // A single random draw hides boundary bugs, so validate over several seeds.
+    // The last trial leaves its matrix in place for the benchmark below.
+    const unsigned seeds[] = {42u, 1337u, 2024u, 7u, 99u};
+    const int trials = (int)(sizeof(seeds) / sizeof(seeds[0]));
+    bool large_ok = true;
     int nnz2 = 0;
-    for (int i = 0; i < M2 * N2; i++) {
-        if (rand() % 100 < 35) {
-            h_A2[i] = static_cast<float>(rand() % 100) / 10.0f;
-            nnz2++;
-        } else {
-            h_A2[i] = 0.0f;
+    for (int trial = 0; trial < trials; trial++) {
+        srand(seeds[trial]);
+        nnz2 = 0;
+        for (int i = 0; i < M2 * N2; i++) {
+            if (rand() % 100 < 35) {
+                h_A2[i] = static_cast<float>(rand() % 100) / 10.0f;
+                nnz2++;
+            } else {
+                h_A2[i] = 0.0f;
+            }
         }
+        for (int i = 0; i < N2; i++) h_x2[i] = static_cast<float>(rand() % 100) / 10.0f;
+
+        spmvCpu(h_A2, h_x2, h_y2_cpu, M2, N2);
+        spmvGPU(h_A2, h_x2, h_y2_gpu, M2, N2);
+
+        bool ok = compareResults(h_y2_cpu, h_y2_gpu, M2);
+        printf("Trial %d/%d (seed %5u, nnz=%d, %.1f%% sparse): %s\n",
+               trial + 1, trials, seeds[trial], nnz2,
+               100.0f * (1.0f - static_cast<float>(nnz2) / (M2 * N2)),
+               ok ? "PASSED" : "FAILED");
+        large_ok = large_ok && ok;
     }
-    for (int i = 0; i < N2; i++) h_x2[i] = static_cast<float>(rand() % 100) / 10.0f;
-    printf("M=%d, N=%d, nnz=%d (%.1f%% sparse)\n\n",
-           M2, N2, nnz2, 100.0f * (1.0f - static_cast<float>(nnz2) / (M2 * N2)));
+    printf("\n");
 
-    t0 = std::chrono::steady_clock::now();
-    spmvCpu(h_A2, h_x2, h_y2_cpu, M2, N2);
-    t1 = std::chrono::steady_clock::now();
-    cpu_time = std::chrono::duration<double>(t1 - t0).count();
-
-    g0 = std::chrono::steady_clock::now();
-    spmvGPU(h_A2, h_x2, h_y2_gpu, M2, N2);
-    g1 = std::chrono::steady_clock::now();
-    gpu_time = std::chrono::duration<double>(g1 - g0).count();
+    cpu_bench = benchmark([&] { spmvCpu(h_A2, h_x2, h_y2_cpu, M2, N2); });
+    gpu_bench = benchmark([&] { spmvGPU(h_A2, h_x2, h_y2_gpu, M2, N2); });
 
     printVector(h_y2_cpu, M2, "Vector y (CPU) - First 10");
     printVector(h_y2_gpu, M2, "Vector y (GPU) - First 10");
-    printf("\nComparing CPU and GPU results...\n");
-    printf("Test %s!\n", compareResults(h_y2_cpu, h_y2_gpu, M2) ? "PASSED" : "FAILED");
-    printf("\nCPU Time: %f seconds\n", cpu_time);
-    printf("GPU Time: %f seconds\n", gpu_time);
-    if (gpu_time > 0) printf("Speedup: %.2fx\n", cpu_time / gpu_time);
+    printf("\nLarge test: %s\n\n", large_ok ? "PASSED" : "FAILED");
+    printBench("CPU:", cpu_bench);
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     delete[] h_A2;
     delete[] h_x2;
     delete[] h_y2_cpu;
     delete[] h_y2_gpu;
-    return 0;
+
+    bool ok = small_ok && large_ok;
+    printf("\nOverall result: %s\n", ok ? "PASSED" : "FAILED");
+    return ok ? 0 : 1;
 }

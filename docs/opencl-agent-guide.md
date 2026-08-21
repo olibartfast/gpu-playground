@@ -62,6 +62,18 @@ For staged OpenCL 3.1 work and its completion criteria, also read
   - instruction mix for compute-bound kernels
   - register and local-memory pressure for low-residency kernels
 
+## Measure Like A Benchmark, Not Like A Stopwatch
+
+The first call into an OpenCL path pays context creation and `clBuildProgram`, which routinely costs
+more than the kernel it is about to run. Timing one call therefore measures the build, not the kernel.
+
+Use `source/utils/benchmark.h` (backend-agnostic — it pulls in no OpenCL headers): several untimed
+warm-up calls, then repeated timed iterations reported as median plus spread. Compare on medians.
+If the output buffer is also an input, pass a `reset` to `benchmarkWithReset()` so every iteration
+starts from the same state, with the reset excluded from the timed region.
+
+See [`cuda-agent-guide.md`](cuda-agent-guide.md) for the full protocol and examples.
+
 ## Practical Profiling
 
 - Use OpenCL event profiling first.
@@ -70,10 +82,11 @@ For staged OpenCL 3.1 work and its completion criteria, also read
 
 ## Review Checklist
 
-- [ ] Correctness checked against a reference path
+- [ ] Correctness checked against a reference path, on more than one randomized input
 - [ ] API calls and build failures are handled explicitly
 - [ ] Optional OpenCL features are queried on the host
 - [ ] In-kernel feature guards are present where needed
 - [ ] Memory access patterns are sane in hot loops
 - [ ] Local size is justified by data
+- [ ] Timings come from `benchmark()` (warm-up + repeated iterations), never a single call
 - [ ] Device and driver context are recorded for performance claims

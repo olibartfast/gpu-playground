@@ -6,7 +6,7 @@
 #include "cuda/matrix_transpose.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cstdlib>
 #include <cstring>
 
@@ -42,21 +42,22 @@ int main() {
     print_matrix(input, rows, cols, "Original matrix");
     #endif
 
-    auto start = std::chrono::steady_clock::now();
-    matrix_transpose_cpu(input, output_cpu, rows, cols);
-    auto end = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        matrix_transpose_cpu(input, output_cpu, rows, cols);
+    });
     #ifdef PRINT
     print_matrix(output_cpu, cols, rows, "CPU transposed");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("CPU:", cpu_bench);
 
-    start = std::chrono::steady_clock::now();
-    matrix_transpose_gpu(input, output_gpu, rows, cols);
-    end = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        matrix_transpose_gpu(input, output_gpu, rows, cols);
+    });
     #ifdef PRINT
     print_matrix(output_gpu, cols, rows, "GPU transposed");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     bool results_match = true;
     for (int i = 0; i < output_size; i++) {

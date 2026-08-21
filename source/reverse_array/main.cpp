@@ -6,7 +6,7 @@
 #include "cuda/reverse.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cstring>
 
 #define PRINT
@@ -32,23 +32,29 @@ int main() {
     print(input_cpu, N, "Starting list");
     #endif
 
+    // Both reversals are in-place, so every iteration must start from the same
+    // buffer contents -- otherwise an even iteration count would silently
+    // un-reverse the array before the comparison below.
+    auto restore = [N](float* buffer) {
+        return [buffer, N] { for (int i = 0; i < N; i++) buffer[i] = (float)i; };
+    };
+
     // CPU reversal (in-place)
-    auto start = std::chrono::steady_clock::now();
-    reverse_array_cpu(input_cpu, N);
-    auto end = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmarkWithReset([&] { reverse_array_cpu(input_cpu, N); },
+                                               restore(input_cpu));
     #ifdef PRINT
     print(input_cpu, N, "CPU reversed");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("CPU:", cpu_bench);
 
     // GPU reversal (in-place via host wrapper)
-    start = std::chrono::steady_clock::now();
-    reverse_array_gpu(input_gpu, N);
-    end = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmarkWithReset([&] { reverse_array_gpu(input_gpu, N); },
+                                               restore(input_gpu));
     #ifdef PRINT
     print(input_gpu, N, "GPU reversed");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     bool match = true;
     for (int i = 0; i < N; i++) {
