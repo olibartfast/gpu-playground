@@ -6,7 +6,7 @@
 #include "cuda/prefix_sum.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <cstdlib>
 
@@ -34,21 +34,22 @@ int main() {
     print(input, N, "Starting list");
     #endif
 
-    auto start = std::chrono::steady_clock::now();
-    prefix_scan_cpu(input, output_cpu, N);
-    auto end = std::chrono::steady_clock::now();
+    BenchResult cpu_bench = benchmark([&] {
+        prefix_scan_cpu(input, output_cpu, N);
+    });
     #ifdef PRINT
     print(output_cpu, N, "CPU prefix scan");
     #endif
-    std::cout << "CPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("CPU:", cpu_bench);
 
-    start = std::chrono::steady_clock::now();
-    prefix_scan_gpu(input, output_gpu, N);
-    end = std::chrono::steady_clock::now();
+    BenchResult gpu_bench = benchmark([&] {
+        prefix_scan_gpu(input, output_gpu, N);
+    });
     #ifdef PRINT
     print(output_gpu, N, "GPU prefix scan");
     #endif
-    std::cout << "GPU time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    printBench("GPU:", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     float expected[] = {1.0f, 3.0f, 6.0f, 10.0f};
     bool passed = true;

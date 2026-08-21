@@ -5,7 +5,7 @@
 #else
 #include "cuda/convolution2d.h"
 #endif
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -69,33 +69,34 @@ int main() {
     print_matrix(input, input_rows, input_cols, "Input");
     print_matrix(kernel, kernel_rows, kernel_cols, "Kernel");
 
-    auto start = std::chrono::steady_clock::now();
-    convolution2d_cpu(input, kernel, output_cpu, input_rows, input_cols, kernel_rows, kernel_cols);
-    auto end = std::chrono::steady_clock::now();
-    double cpu_ms = std::chrono::duration<double, std::milli>(end - start).count();
-
-    start = std::chrono::steady_clock::now();
-    convolution2d_gpu(input, kernel, output_gpu, input_rows, input_cols, kernel_rows, kernel_cols);
-    end = std::chrono::steady_clock::now();
-    double gpu_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    BenchResult cpu_bench = benchmark([&] {
+        convolution2d_cpu(input, kernel, output_cpu, input_rows, input_cols, kernel_rows, kernel_cols);
+    });
+    BenchResult gpu_bench = benchmark([&] {
+        convolution2d_gpu(input, kernel, output_gpu, input_rows, input_cols, kernel_rows, kernel_cols);
+    });
 
     print_matrix(output_cpu, out_rows, out_cols, "CPU Output");
     print_matrix(output_gpu, out_rows, out_cols, "GPU Output");
     std::printf("Expected first test output should be all -6.00\n");
     bool small_ok = compare_results(output_cpu, output_gpu, out_rows * out_cols, 1e-4f);
     std::printf("[kernel1] Small test: %s\n", small_ok ? "PASSED" : "FAILED");
-    std::printf("CPU time: %.3f ms\nGPU time: %.3f ms\n\n", cpu_ms, gpu_ms);
+    printBench("CPU:", cpu_bench);
+    printBench("GPU (naive):", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+    std::printf("\n");
 
     float output_gpu2[out_rows * out_cols] = {};
-    auto g2_start = std::chrono::steady_clock::now();
-    convolution2d_gpu2(input, kernel, output_gpu2, input_rows, input_cols, kernel_rows, kernel_cols);
-    auto g2_end = std::chrono::steady_clock::now();
-    double gpu2_ms = std::chrono::duration<double, std::milli>(g2_end - g2_start).count();
+    BenchResult gpu2_bench = benchmark([&] {
+        convolution2d_gpu2(input, kernel, output_gpu2, input_rows, input_cols, kernel_rows, kernel_cols);
+    });
 
     print_matrix(output_gpu2, out_rows, out_cols, "GPU2 Output (fused)");
     bool small_ok2 = compare_results(output_cpu, output_gpu2, out_rows * out_cols, 1e-4f);
     std::printf("[kernel2] Small test: %s\n", small_ok2 ? "PASSED" : "FAILED");
-    std::printf("GPU2 time: %.3f ms\n\n", gpu2_ms);
+    printBench("GPU (fused):", gpu2_bench);
+    printSpeedup("Fused vs naive:", gpu_bench, gpu2_bench);
+    std::printf("\n");
 
     const int large_input_rows = 32;
     const int large_input_cols = 32;
@@ -110,28 +111,41 @@ int main() {
     float* large_gpu = new float[large_out_rows * large_out_cols];
     float* large_gpu2 = new float[large_out_rows * large_out_cols];
 
-    std::srand(42);
-    for (int i = 0; i < large_input_rows * large_input_cols; i++) {
-        large_input[i] = (float)(std::rand() % 21 - 10) / 5.0f;
-    }
-    for (int i = 0; i < large_kernel_rows * large_kernel_cols; i++) {
-        large_kernel[i] = (float)(std::rand() % 11 - 5) / 5.0f;
+    // A single random draw hides boundary bugs, so validate over several seeds.
+    const unsigned seeds[] = {42u, 1337u, 2024u, 7u, 99u};
+    const int trials = (int)(sizeof(seeds) / sizeof(seeds[0]));
+    const int large_out_size = large_out_rows * large_out_cols;
+    bool large_ok = true, large_ok2 = true;
+
+    for (int trial = 0; trial < trials; trial++) {
+        std::srand(seeds[trial]);
+        for (int i = 0; i < large_input_rows * large_input_cols; i++) {
+            large_input[i] = (float)(std::rand() % 21 - 10) / 5.0f;
+        }
+        for (int i = 0; i < large_kernel_rows * large_kernel_cols; i++) {
+            large_kernel[i] = (float)(std::rand() % 11 - 5) / 5.0f;
+        }
+
+        convolution2d_cpu(large_input, large_kernel, large_cpu,
+                          large_input_rows, large_input_cols,
+                          large_kernel_rows, large_kernel_cols);
+        convolution2d_gpu(large_input, large_kernel, large_gpu,
+                          large_input_rows, large_input_cols,
+                          large_kernel_rows, large_kernel_cols);
+        convolution2d_gpu2(large_input, large_kernel, large_gpu2,
+                           large_input_rows, large_input_cols,
+                           large_kernel_rows, large_kernel_cols);
+
+        bool ok = compare_results(large_cpu, large_gpu, large_out_size, 1e-4f);
+        bool ok2 = compare_results(large_cpu, large_gpu2, large_out_size, 1e-4f);
+        std::printf("Large trial %d/%d (seed %5u): [kernel1] %s  [kernel2] %s\n",
+                    trial + 1, trials, seeds[trial],
+                    ok ? "PASSED" : "FAILED", ok2 ? "PASSED" : "FAILED");
+        large_ok = large_ok && ok;
+        large_ok2 = large_ok2 && ok2;
     }
 
-    convolution2d_cpu(large_input, large_kernel, large_cpu,
-                      large_input_rows, large_input_cols,
-                      large_kernel_rows, large_kernel_cols);
-    convolution2d_gpu(large_input, large_kernel, large_gpu,
-                      large_input_rows, large_input_cols,
-                      large_kernel_rows, large_kernel_cols);
-    convolution2d_gpu2(large_input, large_kernel, large_gpu2,
-                       large_input_rows, large_input_cols,
-                       large_kernel_rows, large_kernel_cols);
-
-    bool large_ok = compare_results(large_cpu, large_gpu, large_out_rows * large_out_cols, 1e-4f);
     std::printf("\n[kernel1] Large test: %s\n", large_ok ? "PASSED" : "FAILED");
-
-    bool large_ok2 = compare_results(large_cpu, large_gpu2, large_out_rows * large_out_cols, 1e-4f);
     std::printf("[kernel2] Large test: %s\n", large_ok2 ? "PASSED" : "FAILED");
 
     delete[] large_input;

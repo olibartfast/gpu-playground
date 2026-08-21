@@ -6,7 +6,7 @@
 #include "cuda/sigmoid.h"
 #endif
 #include <iostream>
-#include <chrono>
+#include "benchmark.h"
 #include <cmath>
 #include <vector>
 
@@ -21,17 +21,16 @@ int main()
         input[i] = (float)(i % 100) - 50.0f;
     }
 
-    auto start_cpu = std::chrono::steady_clock::now();
-    sigmoid_cpu(input.data(), output_cpu.data(), N);
-    auto end_cpu = std::chrono::steady_clock::now();
-    std::chrono::duration<double, std::milli> duration_cpu = end_cpu - start_cpu;
-    std::cout << "CPU duration: " << duration_cpu.count() << " ms" << std::endl;
+    BenchResult cpu_bench = benchmark([&] {
+        sigmoid_cpu(input.data(), output_cpu.data(), N);
+    });
+    printBench("CPU:", cpu_bench);
 
-    auto start_gpu = std::chrono::steady_clock::now();
-    sigmoid_gpu(input.data(), output_gpu.data(), N);
-    auto end_gpu = std::chrono::steady_clock::now();
-    std::chrono::duration<double, std::milli> duration_gpu = end_gpu - start_gpu;
-    std::cout << "GPU duration: " << duration_gpu.count() << " ms" << std::endl;
+    BenchResult gpu_bench = benchmark([&] {
+        sigmoid_gpu(input.data(), output_gpu.data(), N);
+    });
+    printBench("GPU (scalar):", gpu_bench);
+    printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
 
     for(int i = 0; i < N; i++) {
         if(fabs(output_cpu[i] - output_gpu[i]) > 1e-5) {
@@ -43,11 +42,12 @@ int main()
     std::cout << "[kernel1] Results match!" << std::endl;
 
     std::vector<float> output_gpu2(N);
-    auto start_gpu2 = std::chrono::steady_clock::now();
-    sigmoid2_gpu(input.data(), output_gpu2.data(), N);
-    auto end_gpu2 = std::chrono::steady_clock::now();
-    std::chrono::duration<double, std::milli> duration_gpu2 = end_gpu2 - start_gpu2;
-    std::cout << "GPU2 (vectorized) duration: " << duration_gpu2.count() << " ms" << std::endl;
+    BenchResult gpu2_bench = benchmark([&] {
+        sigmoid2_gpu(input.data(), output_gpu2.data(), N);
+    });
+    printBench("GPU (vectorized):", gpu2_bench);
+    printSpeedup("Speedup (CPU/GPU2):", cpu_bench, gpu2_bench);
+    printSpeedup("Vectorized vs scalar:", gpu_bench, gpu2_bench);
 
     for(int i = 0; i < N; i++) {
         if(fabs(output_cpu[i] - output_gpu2[i]) > 1e-5) {

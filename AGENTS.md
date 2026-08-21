@@ -35,6 +35,8 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
   - a correctness check, or
   - a clear note that validation was not run.
 - Prefer small, attributable optimization changes over multi-variable rewrites.
+- Time every CPU/GPU path with `benchmark()` from `source/utils/benchmark.h`, never a single
+  `steady_clock` pair. Use `benchmarkWithReset()` when the output buffer is also an input.
 - Every new kernel must update `Readme.md` in the same change. At minimum,
   update the kernel inventory, backend coverage, and any required build or run
   instructions.
@@ -74,6 +76,38 @@ Profile a CUDA binary:
 ```bash
 ./cuda_perf_analysis.sh ./build/default/source/gemm/gemm
 ```
+
+## Testing And Benchmarking
+
+Each kernel binary is its own test harness; there is no separate unit-test framework. A harness
+validates GPU output against a CPU reference within a stated tolerance (~1e-4f) and reports timings.
+
+Time with `benchmark()` / `benchmarkWithReset()` from `source/utils/benchmark.h` (backend-agnostic,
+pulls in no CUDA or OpenCL headers). A single timed call mostly measures one-off costs — CUDA context
+creation, `clBuildProgram`, first-touch page faults, clock ramp-up — which can dwarf the kernel itself.
+The protocol is: a few untimed warm-up calls, then repeated timed iterations reported as median plus
+spread, compared on the median.
+
+```cpp
+#include "benchmark.h"
+
+BenchResult cpu_bench = benchmark([&] { softmax_cpu(input, out_cpu, N); });
+BenchResult gpu_bench = benchmark([&] { softmax_gpu(input, out_gpu, N); });
+printBench("CPU:", cpu_bench);
+printBench("GPU:", gpu_bench);
+printSpeedup("Speedup (CPU/GPU):", cpu_bench, gpu_bench);
+
+// Output doubles as input: reset before every call, untimed.
+BenchResult gemm_bench = benchmarkWithReset(
+    [&] { gemmGPU(A, B, C, alpha, beta, M, N, K); },
+    [&] { std::copy(C_seed, C_seed + M * N, C); });
+```
+
+Defaults are 3 warm-up + 10 timed iterations; pass explicit counts as trailing arguments when a slow
+reference implementation would otherwise dominate harness runtime.
+
+`source/utils/benchmark_helpers.h` is separate and complementary: it converts a latency into
+throughput, bandwidth, or a speedup ratio for harnesses that report those.
 
 ## Standard Workflow
 
