@@ -1,0 +1,23 @@
+[agents]
+max_threads = 5
+max_depth = 1
+
+[agents.kernel_author]
+description = "Add or refactor kernels while preserving backend boundaries and harness conventions."
+config_file = "./agents/kernel-author.toml"
+
+[agents.cuda_optimizer]
+description = "Optimize CUDA kernels with a measurement-first workflow."
+config_file = "./agents/cuda-optimizer.toml"
+
+[agents.opencl_reviewer]
+description = "Review or improve OpenCL implementations for portability, correctness, and performance."
+config_file = "./agents/opencl-reviewer.toml"
+
+[agents.perf_diagnoser]
+description = "Classify the dominant bottleneck before deeper optimization work starts."
+config_file = "./agents/perf-diagnoser.toml"
+
+[agents.docs_curator]
+description = "Keep repo docs, agent docs, and tool-specific guidance aligned."
+config_file = "./agents/docs-curator.toml"

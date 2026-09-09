@@ -295,6 +295,18 @@ fn main():
 
 ## Notes on Performance and Usage
 
+C++ kernel harnesses can include `benchmark_helpers.h` from `source/utils/`
+to measure any synchronous CPU or GPU wrapper:
+
+```cpp
+double ms = gpu_benchmark::average_milliseconds(run_kernel, 2, 20);
+double gflops = gpu_benchmark::giga_operations_per_second(operation_count, ms);
+double bandwidth = gpu_benchmark::gigabytes_per_second(bytes_moved, ms);
+```
+
+GPU wrappers must synchronize before returning. Report kernel-only and
+end-to-end measurements separately when allocation or transfers are material.
+
 * **GPU Support**: Each framework has its own way of handling GPU acceleration. Make sure to check device availability and properly move data to GPU when needed.
 * **Performance Considerations**: 
   - Always include warmup runs before benchmarking
