@@ -1,0 +1,3 @@
+set_source_files_properties(cuda/categorical_cross_entropy.cpp main.cpp PROPERTIES LANGUAGE CUDA)
+add_executable(categorical_cross_entropy main.cpp cuda/categorical_cross_entropy.cpp)
+target_link_libraries(categorical_cross_entropy PRIVATE cuda_helpers)

@@ -2,6 +2,14 @@
 
 This guide walks through adding a self-contained CUDA + OpenCL kernel to the `source/` directory.
 
+The three-backend layout is the default. A task may explicitly add a CUDA-only
+example when the operation or dependency is backend-specific. In that case:
+
+- keep CUDA code under `source/<kernel>/cuda/`
+- ensure OpenCL configurations skip the target cleanly
+- mark the backend coverage as CUDA-only in `Readme.md`
+- validate an OpenCL configure/build so the exception does not break the matrix
+
 ## Directory Layout
 
 Every kernel follows the same layout with separate `cuda/`, `opencl/`, and `opencl_cpp/` subdirectories:
@@ -76,7 +84,7 @@ void myKernel_gpu(const float* h_input, float* h_output, int n) {
 }
 ```
 
-Key rules (see `docs/agentic_ai/cuda-copilot-rules.md` for the full list):
+Key rules (see `docs/cuda-agent-guide.md` for the full list):
 - Thread block size must be a multiple of 32; start with 128–256 threads/block.
 - Wrap every CUDA API call with `CUDA_CHECK`.
 - Call `cudaGetLastError()` after every kernel launch.
@@ -295,7 +303,21 @@ cmake -DGPU_ENABLE_MY_KERNEL=OFF ..
 
 ---
 
-## Step 4 — Build and run
+## Step 4 — Update `Readme.md` (required)
+
+Every new kernel must update the root `Readme.md` in the same change. Update:
+
+- the project-structure kernel count or wording
+- the Kernel Implementations table, including backend coverage
+- any prerequisites or non-default build and run commands
+- links to a kernel-specific README when setup is more than one command
+
+Agents must not present a new kernel as complete until this documentation is
+accurate.
+
+---
+
+## Step 5 — Build and run
 
 ```bash
 # CUDA build (default: SM 7.0)
@@ -336,5 +358,6 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 - [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` in `source/utils/benchmark.h`, not a bare `steady_clock` pair
 - [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()` block; correct `set_source_files_properties` for CUDA path
 - [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` + `add_subdirectory`
+- [ ] Root `Readme.md` — kernel inventory, backend coverage, and required build/run instructions
 - [ ] Thread block size is a multiple of 32
 - [ ] All CUDA API calls wrapped in `CUDA_CHECK`; all OpenCL C calls wrapped in `CL_CHECK`; OpenCL C++ uses exception handling

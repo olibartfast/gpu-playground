@@ -10,4 +10,17 @@ build
 **/*__pycache__
 .*
 !.github
+!.agents
+!.agents/**
+!.claude
+!.claude/**
+!.codex
+!.codex/**
+!.cursor
+!.cursor/**
+!.opencode
+!.opencode/**
 gpu-mode/popcorn-cli
+.claude/settings.local.json
+.opencode/package-lock.json
+source/deep_learning_inference/weights.bin

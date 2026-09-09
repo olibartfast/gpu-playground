@@ -132,6 +132,7 @@ gpu_playground/
 ├── source/                    ← all C++/CUDA/OpenCL source code
 │   ├── utils/                 ← shared utility libraries
 │   │   ├── cuda_helpers.h         ← CUDA_CHECK macro + getTime()
+│   │   ├── benchmark_helpers.h    ← reusable latency, throughput, bandwidth + speedup helpers
 │   │   ├── opencl_c_helpers.h     ← C API: CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
 │   │   └── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
 │   ├── gemm/                  ← each kernel: main.cpp + cuda/ + opencl/ + opencl_cpp/
@@ -139,7 +140,7 @@ gpu_playground/
 │   │   ├── cuda/              ← CUDA kernel + host-pointer wrapper
 │   │   ├── opencl/            ← OpenCL C API implementation
 │   │   └── opencl_cpp/        ← OpenCL C++ wrapper implementation
-│   └── ...                    ← same layout for all 14 kernels
+│   └── ...                    ← additional kernels; backend coverage is listed below
 ├── CMakeLists.txt             ← root build file; USE_OPENCL / USE_OPENCL_CPP + GPU_ENABLE_* flags
 ├── CMakePresets.json          ← build presets (default, native, ampere, release)
 ├── cuda_perf_analysis.sh      ← performance profiling script
@@ -150,7 +151,9 @@ gpu_playground/
 
 ### Kernel Implementations
 
-Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirectories for the backend implementations, and a shared `main.cpp` test harness that selects the backend at compile time.
+Portable kernels under `source/` have `cuda/`, `opencl/`, and `opencl_cpp/`
+subdirectories plus a shared `main.cpp` harness. CUDA-only examples are marked
+explicitly in the table.
 
 | Kernel | Description |
 |--------|-------------|
@@ -169,6 +172,36 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 | `value_clipping` | Element-wise value clamping |
 | `rgb_to_grayscale` | RGB to grayscale conversion (Rec.601 luminance) |
 | `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) |
+| `deep_learning_inference` | Small feed-forward CNN (RGBA→grayscale): reference vs. candidate optimization exercise. CUDA-only. Requires `python source/deep_learning_inference/generate_weights.py` before first run. Modes: `benchmark`, `image_infer <in> <out>`, `correctness <img>`. See `source/deep_learning_inference/README.md` for setup and run steps. |
+| `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
+| `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (CUDA-only, LeetGPU challenge 25) |
+
+Run the LeetGPU-compatible FP16 functional cases and its 100-million-element
+performance shape with:
+
+```bash
+./build/default/source/fp16_dot_product/fp16_dot_product
+./build/default/source/fp16_dot_product/fp16_dot_product --performance
+```
+
+Run the LeetGPU challenge 25 categorical-cross-entropy functional cases and
+its `N=10,000`, `C=1,000` performance shape with:
+
+```bash
+./build/default/source/categorical_cross_entropy/categorical_cross_entropy
+./build/default/source/categorical_cross_entropy/categorical_cross_entropy --performance
+```
+
+The performance output distinguishes CPU throughput, GPU kernel-only
+throughput, and GPU end-to-end throughput. Shared calculations for GFLOP/s,
+GB/s, million items/s, and speedup live in
+`source/utils/benchmark_helpers.h` and can be reused by other synchronous
+kernel harnesses.
+
+### Planned Kernels
+
+- `lora_linear` is design-only and has no build target yet. See the
+  [LoRA linear implementation plan](docs/lora-linear-implementation-plan.md).
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
@@ -178,6 +211,13 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 
 ### Documentation
 - `docs/` - Development guidelines and best practices
+  - `agentic-getting-started.md` - Entry point for agentic workflows in this repo
+  - `claude-code-guide.md` - Claude Code workflow and expectations
+  - `codex-guide.md` - Codex workflow and expectations
+  - `cuda-agent-guide.md` - Consolidated CUDA optimization rules for coding agents
+  - `opencl-agent-guide.md` - Consolidated OpenCL optimization rules for coding agents
+  - `opencl-3.1-migration-plan.md` - Staged OpenCL 3.1 migration scope and completion criteria
+  - `lora-linear-implementation-plan.md` - Planned CUDA LoRA linear kernel design
   - `EXAMPLES.md` - Detailed code examples and benchmarks
   - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
   - `adding-a-new-kernel.md` - How-To adding a new kernel to the project
@@ -191,6 +231,8 @@ Each kernel under `source/` has `cuda/`, `opencl/`, and `opencl_cpp/` subdirecto
 
 For detailed code examples and benchmarks, see [EXAMPLES.md](https://github.com/olibartfast/gpu-playground/blob/master/docs/EXAMPLES.md).
 
+For agentic workflows and repo-specific coding-agent guidance, start with [AGENTS.md](AGENTS.md) and [docs/agentic-getting-started.md](docs/agentic-getting-started.md).
+
 ## Further Resources and References
 
 ### GPU Programming Communities
@@ -198,6 +240,7 @@ For detailed code examples and benchmarks, see [EXAMPLES.md](https://github.com/
 * [LeetGPU](https://leetgpu.com)
 * [reference-kernels](https://github.com/gpu-mode/reference-kernels) - Reference kernels for the KernelBot competitions on [discord.gg/gpumode](https://discord.gg/gpumode)
 * [Course on CUDA programming at Oxford Mathematical Institute](https://people.maths.ox.ac.uk/~gilesm/cuda/)
+* [Interactive GPU learning resource](https://brrrviz.com/)
 
 ### Frameworks and Libraries
 * [NVIDIA CUDA Samples](https://github.com/NVIDIA/cuda-samples)
