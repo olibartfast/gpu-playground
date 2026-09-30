@@ -211,6 +211,8 @@ kernel harnesses.
 
 ### Documentation
 - `docs/` - Development guidelines and best practices
+  - `algorithmic-complexity.md` - Shared cost model (work/depth/space/traffic), improvement taxonomy, and kernel inventory for the per-kernel complexity studies
+  - `complexity/` - Per-kernel complexity studies (Phase 1 pilots: `sigmoid`, `prefix_sum`, `gemm`)
   - `agentic-getting-started.md` - Entry point for agentic workflows in this repo
   - `claude-code-guide.md` - Claude Code workflow and expectations
   - `codex-guide.md` - Codex workflow and expectations
