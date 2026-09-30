@@ -40,23 +40,15 @@ This repo now treats agentic documentation as a small, curated set instead of lo
 ## Repo Entry Points
 
 - Human overview: [`../Readme.md`](../Readme.md)
-- Claude-native repo guidance: [`../CLAUDE.md`](../CLAUDE.md)
 - Agent operating contract: [`../AGENTS.md`](../AGENTS.md)
 - Kernel authoring guide: [`adding-a-new-kernel.md`](adding-a-new-kernel.md)
 - Colab path: [`building-on-google-colab.md`](building-on-google-colab.md)
 
-## Agent Folder Layout
+## Agent Rules And Roles
 
-The repo-local agent surfaces now follow the same pattern used by the reference repos:
-
-- shared rules: `.agents/rules/`
-- shared skills: `.agents/skills/`
-- Claude agent entrypoints: `.claude/agents/`
-- Codex agent entrypoints: `.codex/agents/`
-- Cursor agent rules: `.cursor/rules/`
-- GitHub Copilot agent entrypoints: `.github/agents/`
-- OpenCode agent entrypoints: `.opencode/agent/`
-- OpenCode repo config: `opencode.json`
+All agent rules and roles live in [`../AGENTS.md`](../AGENTS.md) ("Agent Rules" and
+"Agent Roles"). There are no per-tool agent trees; every tool reads the same file.
+OpenCode picks it up via `opencode.json`.
 
 ## What Changed From The Old Layout
 

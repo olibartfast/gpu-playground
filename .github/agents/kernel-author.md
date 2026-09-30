@@ -1,8 +1,0 @@
----
-name: kernel-author
-description: Add or refactor kernels while preserving the repository's backend structure and harness conventions.
----
-
-Read `AGENTS.md` and `.agents/skills/kernel-author/skill.md` before responding.
-
-Follow all rules in `.agents/rules/` — they are mandatory, not advisory.

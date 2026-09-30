@@ -9,15 +9,13 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
 ## Repo Surface
 
 - `Readme.md` is the human-facing project overview.
-- `CLAUDE.md` is the Claude Code-oriented repo guide.
 - `docs/agentic-getting-started.md` is the main entrypoint for agentic use in this repo.
 - `docs/cuda-agent-guide.md` and `docs/opencl-agent-guide.md` are the optimization rulebooks.
 - `docs/opencl-3.1-migration-plan.md` and
   `docs/lora-linear-implementation-plan.md` track planned work; they are not
   implemented kernel claims.
-- `.agents/rules/` contains mandatory shared rules for repo-local agents.
-- `.agents/skills/` contains reusable custom-agent definitions.
-- `.claude/agents/`, `.codex/agents/`, `.cursor/rules/`, `.github/agents/`, and `.opencode/agent/` project the same custom agents into each tool surface.
+- This file is the single source of truth for agent rules and agent roles (see
+  "Agent Rules" and "Agent Roles" below). There are no per-tool agent trees.
 - `opencode.json` is the repo-local OpenCode config entrypoint.
 - `source/<kernel>/` contains the implementation for each kernel.
 - `source/utils/` contains shared CUDA and OpenCL helper code.
@@ -139,20 +137,63 @@ throughput, bandwidth, or a speedup ratio for harnesses that report those.
 
 Submissions live in `gpu-mode/submissions/`. Tools in `gpu-mode/tools/`.
 
-## Custom Agent Layout
+## Agent Rules
 
-- Shared rules: `.agents/rules/`
-- Shared skills: `.agents/skills/`
-- Claude agent entrypoints: `.claude/agents/`
-- Codex agent entrypoints: `.codex/agents/`
-- Cursor rules: `.cursor/rules/`
-- GitHub Copilot agents: `.github/agents/`
-- OpenCode agents: `.opencode/agent/`
+These rules are mandatory for every agent and every tool (Claude Code, Codex,
+Cursor, Copilot, OpenCode). They complement the Hard Rules above.
 
-The current repo-local custom agents are:
+### Backend Boundaries
 
-- `kernel-author`
-- `cuda-optimizer`
-- `opencl-reviewer`
-- `perf-diagnoser`
-- `docs-curator`
+- Keep `main.cpp` as the backend-agnostic harness entrypoint.
+- Do not leak CUDA or OpenCL types into backend-agnostic headers unless the existing file already does.
+- Keep backend plumbing (includes, resource lifetimes) in the backend implementation file, not the harness.
+- Check: would another backend still compile cleanly after this change?
+
+### Kernel Harness Contract
+
+- `main.cpp` drives the CPU reference and the GPU execution; allocation, transfers, and launches live
+  in backend implementation files.
+- Return non-zero on validation failure.
+- Keep the harness focused on setup, invocation, timing, and comparison.
+- Keep naming and directory structure aligned with existing kernels.
+
+### CUDA Optimization
+
+- Start from a baseline; change one optimization variable at a time.
+- Use thread counts that are multiples of `32`; treat `128-256` threads per block as a starting point, not a law.
+- Prioritize coalesced memory access before micro-optimizations.
+- Use shared memory only when reuse clearly offsets synchronization and storage cost.
+- Wrap CUDA runtime calls with `CUDA_CHECK`; check launches with `cudaGetLastError()`.
+- Avoid device-side allocation. Make precision and fast-math tradeoffs explicit.
+
+### OpenCL Portability
+
+- Query optional device capabilities instead of assuming them; guard optional OpenCL C features
+  with `__opencl_c_*` checks.
+- Keep fallback paths clear when sub-groups, FP16, or other optional features are absent.
+- Prefer simple coalesced access before adding `__local` tiling.
+- Re-validate local-size choices on the actual target device class.
+- Always inspect and surface build logs when kernel compilation fails.
+
+### Profiling And Validation
+
+- Do not claim a performance win without naming the measurement path.
+- Distinguish clearly between correctness verified, build verified, and performance measured.
+- Prefer the smallest validation step that proves the requested change.
+- For CUDA performance work, start with `./cuda_perf_analysis.sh <binary>` when appropriate.
+- When full validation is not possible, state the gap explicitly.
+
+## Agent Roles
+
+Any tool can adopt one of these roles when a task matches. Each role follows all Agent Rules above.
+
+| Role | Use when | Report |
+|------|----------|--------|
+| `kernel-author` | Adding or restructuring a kernel; wiring its `CMakeLists.txt` and harness | Kernel surface changed, backend dirs affected, build/harness implications, `Readme.md` update, validation status |
+| `cuda-optimizer` | A CUDA kernel is slow or needs tuning/review | Bottleneck hypothesis, evidence, highest-value next change, validation status and risks |
+| `opencl-reviewer` | OpenCL kernel or host path needs review; portability, local-size, or optional-feature concerns | Issue identified, evidence, recommended next step, validation status and compatibility risks |
+| `perf-diagnoser` | A kernel regressed, a profile needs interpreting, or the optimization direction is unclear | Bottleneck class (harness overhead, CUDA memory, CUDA occupancy/divergence, OpenCL portability/local-size, algorithmic work inflation, measurement gap), evidence, next step, tradeoffs |
+| `docs-curator` | Docs, entrypoints, or tool guides drift from repo structure | Entrypoints updated, structure described, stale references removed, validation status |
+
+Across roles: prefer small changes that fit the existing template, no broad rewrites without a
+measured or clearly argued bottleneck, and one source of truth over duplicated prose.

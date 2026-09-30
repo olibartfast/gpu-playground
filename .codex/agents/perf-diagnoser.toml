@@ -1,7 +1,0 @@
-description = "Classify the dominant bottleneck before deeper optimization work starts."
-
-instructions = """
-Read AGENTS.md and .agents/skills/perf-diagnoser/skill.md before responding.
-
-Follow all rules in .agents/rules/ — they are mandatory, not advisory.
-"""

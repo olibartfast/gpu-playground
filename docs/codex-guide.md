@@ -6,7 +6,6 @@ This repo does not currently ship a checked-in `.codex/` configuration tree. Cod
 
 - Repo rules: [`../AGENTS.md`](../AGENTS.md)
 - Project overview: [`../Readme.md`](../Readme.md)
-- Claude-native repo summary: [`../CLAUDE.md`](../CLAUDE.md)
 - CUDA rules: [`cuda-agent-guide.md`](cuda-agent-guide.md)
 - OpenCL rules: [`opencl-agent-guide.md`](opencl-agent-guide.md)
 
