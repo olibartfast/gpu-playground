@@ -65,6 +65,22 @@ with contextlib.redirect_stdout(io.StringIO()):
 expect(same is True, "check_close True on match")
 expect(diff is False, "check_close False on mismatch, no raise")
 
+# Added 2026-10-01 after V-7 review (attempt 1): mismatched inputs must FAIL, never raise or broadcast.
+def no_raise_false(actual, expected, what):
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            result = gb.check_close(actual, expected, atol=1e-6, rtol=1e-6, name=what)
+    except Exception as exc:  # noqa: BLE001
+        expect(False, f"check_close raised on {what}: {type(exc).__name__}")
+        return
+    expect(result is False, f"check_close returns False on {what}")
+
+no_raise_false(torch.zeros(3, device="cuda"), torch.zeros(4, device="cuda"), "shape mismatch")
+no_raise_false(torch.zeros(0, device="cuda"), torch.zeros(3, device="cuda"), "empty vs non-empty")
+no_raise_false(torch.zeros(2, 1, device="cuda"), torch.zeros(2, device="cuda"), "broadcastable shape mismatch")
+no_raise_false(torch.zeros(3, device="cuda"), torch.zeros(3, device="cuda", dtype=torch.float64), "dtype mismatch")
+no_raise_false(torch.zeros(3, device="cuda"), torch.zeros(3), "device mismatch")
+
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
     gb.print_bench("GPU:", r)

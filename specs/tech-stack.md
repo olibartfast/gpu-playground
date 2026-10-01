@@ -10,3 +10,6 @@ Evidence: [CMake](../CMakeLists.txt) and [repository contract](../AGENTS.md).
   alongside end-to-end. Identify device, precision, shape, and timing boundary.
 - Existing [CUDA](../docs/cuda-agent-guide.md) and
   [OpenCL](../docs/opencl-agent-guide.md) guides govern future optimization work.
+- Optional Python DSL backends (Triton, CuTe DSL) at `source/<kernel>/python/<dsl>/<kernel>.py`
+  are standalone scripts, not CMake targets. They share a torch-based benchmarking helper,
+  `source/utils/python/gpu_bench.py`, rather than `source/utils/benchmark.h`.

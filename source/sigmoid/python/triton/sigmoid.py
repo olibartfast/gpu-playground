@@ -1,11 +1,35 @@
-import torch
-import triton
-import triton.language as tl
+"""Triton backend for the sigmoid kernel.
+
+What: elementwise sigmoid y = 1 / (1 + exp(-x)) over a 1-D float32 tensor,
+computed by a single Triton kernel.
+
+Run: `python source/sigmoid/python/triton/sigmoid.py [--performance]` from
+the repo root.
+
+Timing boundary: timings are device-resident: inputs are already on the GPU
+and each timed call is launch + kernel only. This is comparable to the C++
+`GPU kernel:` line (benchmarkDevice().device), not the C++ end-to-end lines
+that include host/device transfers.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "utils" / "python"))
+from gpu_bench import benchmark, check_close, print_bench, print_speedup, require  # noqa: E402
+
+require("torch", "triton")
+
+import torch  # noqa: E402
+import triton  # noqa: E402
+import triton.language as tl  # noqa: E402
+
+ATOL = 1e-6
+RTOL = 1e-6
+BLOCK_SIZE = 1024
+LARGE_N = 2_000_000
+PERF_N = 20_000_000
 
 
-# ----------------------------
-# Triton Kernel
-# ----------------------------
 @triton.jit
 def sigmoid_kernel(x_ptr, y_ptr, n_elements, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(axis=0)
@@ -18,89 +42,43 @@ def sigmoid_kernel(x_ptr, y_ptr, n_elements, BLOCK_SIZE: tl.constexpr):
 
 
 def solve(X: torch.Tensor, Y: torch.Tensor, N: int):
-    BLOCK_SIZE = 1024
     grid = (triton.cdiv(N, BLOCK_SIZE),)
     sigmoid_kernel[grid](X, Y, N, BLOCK_SIZE)
 
 
-# ----------------------------
-# Validation + Benchmark
-# ----------------------------
-def validate_and_benchmark():
-    assert torch.cuda.is_available(), "CUDA not available"
+def _validate() -> bool:
+    torch.manual_seed(0)
+    ok = True
+    for n in (1, 1000, LARGE_N):
+        X = torch.randn(n, device="cuda", dtype=torch.float32)
+        Y = torch.empty_like(X)
+        solve(X, Y, n)
+        expected = torch.sigmoid(X)
+        ok &= check_close(Y, expected, ATOL, RTOL, name=f"n={n}")
+    return ok
 
-    device = "cuda"
-    dtype = torch.float32
-    N = 10_000_000
 
-    X = torch.randn(N, device=device, dtype=dtype)
+def main() -> int:
+    ok = _validate()
+
+    bench_n = PERF_N if "--performance" in sys.argv else LARGE_N
+    X = torch.randn(bench_n, device="cuda", dtype=torch.float32)
     Y = torch.empty_like(X)
 
-    # ----------------------------
-    # ✅ Validation
-    # ----------------------------
-    solve(X, Y, N)
-    torch.cuda.synchronize()
+    r = benchmark(lambda: solve(X, Y, bench_n))
+    print_bench("GPU (triton):", r)
 
-    torch_result = torch.sigmoid(X)
-    max_error = torch.max(torch.abs(Y - torch_result)).item()
+    rt = benchmark(lambda: torch.sigmoid(X))
+    print_bench("PyTorch:", rt)
+    print_speedup("Speedup (PyTorch/Triton):", rt, r)
 
-    print(f"Max error: {max_error:.6e}")
-    if max_error < 1e-6:
-        print("Validation: ✅ PASSED")
-    else:
-        print("Validation: ❌ FAILED")
+    bytes_moved = 2 * bench_n * X.element_size()
+    gbps = (bytes_moved / 1e9) / (r.median_ms / 1000.0)
+    print(f"Bandwidth: {gbps:.2f} GB/s (n={bench_n})")
 
-    # ----------------------------
-    # ✅ Warmup
-    # ----------------------------
-    for _ in range(10):
-        solve(X, Y, N)
-        torch.sigmoid(X)
-    torch.cuda.synchronize()
-
-    # ----------------------------
-    # ✅ Benchmark (averaged)
-    # ----------------------------
-    runs = 50
-    start = torch.cuda.Event(enable_timing=True)
-    end = torch.cuda.Event(enable_timing=True)
-
-    # Triton timing
-    start.record()
-    for _ in range(runs):
-        solve(X, Y, N)
-    end.record()
-    torch.cuda.synchronize()
-    triton_time = start.elapsed_time(end) / runs  # ms
-
-    # PyTorch timing
-    start.record()
-    for _ in range(runs):
-        torch.sigmoid(X)
-    end.record()
-    torch.cuda.synchronize()
-    torch_time = start.elapsed_time(end) / runs  # ms
-
-    # ----------------------------
-    # ✅ Bandwidth Calculation
-    # ----------------------------
-    bytes_processed = 2 * X.numel() * X.element_size()  # read + write
-    gb = bytes_processed / 1e9
-
-    triton_bw = gb / (triton_time / 1000)
-    torch_bw = gb / (torch_time / 1000)
-
-    # ----------------------------
-    # ✅ Results
-    # ----------------------------
-    print("\n--- Benchmark Results ---")
-    print(f"Triton time:  {triton_time:.3f} ms")
-    print(f"PyTorch time: {torch_time:.3f} ms")
-    print(f"Speedup:      {torch_time / triton_time:.2f}x")
-    print(f"Triton BW:    {triton_bw:.2f} GB/s")
-    print(f"PyTorch BW:   {torch_bw:.2f} GB/s")
+    print("Overall result: PASSED" if ok else "Overall result: FAILED")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    validate_and_benchmark()
+    sys.exit(main())

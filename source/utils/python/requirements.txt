@@ -1,0 +1,6 @@
+torch
+triton
+
+# Optional, only needed for source/*/python/cute-dsl/ scripts: nvidia-cutlass-dsl
+# Versions validated against this repo are recorded in
+# specs/2026-10-01-python-backend/requirements.md (F-7).

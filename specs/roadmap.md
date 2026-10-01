@@ -38,7 +38,7 @@ Branch: `feat/python-backend`.
 
 | Phase | Outcome | Status |
 |---|---|---|
-| 0 | Requirements, plan, validation, frozen acceptance | Specified 2026-10-01 |
-| 1 | `source/utils/python/gpu_bench.py` + requirements | Planned |
-| 2 | Migrate the 3 existing Triton/CuTe scripts; docs | Planned |
+| 0 | Requirements, plan, validation, frozen acceptance | Done 2026-10-01 |
+| 1 | `source/utils/python/gpu_bench.py` + requirements | Done 2026-10-01 |
+| 2 | Migrate the 3 existing Triton/CuTe scripts; docs | Done 2026-10-01 (CuTe execution gap: cutlass not installed) |
 | Idea | GPU-less `py_compile` CI job; Python ports of more kernels; CuTe DSL environment | Idea |

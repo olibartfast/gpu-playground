@@ -1,6 +1,6 @@
 # Requirements: Python DSL backends (Triton, CuTe DSL)
 
-Created: 2026-10-01. Status: specified; implementation not started.
+Created: 2026-10-01. Status: implemented and validated 2026-10-01 (CuTe DSL run is a recorded gap; see validation.md).
 Branch: `feat/python-backend`, rebased onto `master` at 1f07323 after PR #6 (gaussian_blur)
 and PR #7 (device-time benchmarking) merged.
 
