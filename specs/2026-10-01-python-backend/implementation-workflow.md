@@ -33,4 +33,9 @@ GPU use is light (seconds per script), so T-2 can share the GPU with nothing els
 
 | Attempt | Packet | Revision | Role/model | Acceptance exit | Evidence | Interventions |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | Not started | — |
+| 1 | T-1 | 310b9ea | implementer | V-1 pass | helper_check PASSED | none |
+| 1 | T-2 | 310b9ea + T-1 | implementer | check.sh exit 0 | V-1..V-6, V-4 GAP | none |
+| 1 | T-3 | 310b9ea + T-1 | implementer | own checks pass | V-6 greps | resumed once at its turn limit |
+| 1 | V-7 | working tree | reviewer | REJECT | check_close raised/broadcast; CuTe timed JIT; doc duplication | specifier extended helper_check.py |
+| 2 | A, B, C fixes | working tree | 3 fresh implementers | check.sh exit 0 (orchestrator re-run) | full acceptance | C resumed once at its turn limit |
+| 2 | V-7 | working tree | reviewer | APPROVE | one accepted nit | — |
