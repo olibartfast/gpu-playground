@@ -175,6 +175,7 @@ explicitly in the table.
 | `deep_learning_inference` | Small feed-forward CNN (RGBA→grayscale): reference vs. candidate optimization exercise. CUDA-only. Requires `python source/deep_learning_inference/generate_weights.py` before first run. Modes: `benchmark`, `image_infer <in> <out>`, `correctness <img>`. See `source/deep_learning_inference/README.md` for setup and run steps. |
 | `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
 | `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (CUDA-only, LeetGPU challenge 25) |
+| `gaussian_blur` | Naive 2D Gaussian blur / same-size convolution with zero padding, one thread per output pixel reading every tap from global memory (CUDA-only, LeetGPU challenge 28) |
 
 Run the LeetGPU-compatible FP16 functional cases and its 100-million-element
 performance shape with:
@@ -190,6 +191,14 @@ its `N=10,000`, `C=1,000` performance shape with:
 ```bash
 ./build/default/source/categorical_cross_entropy/categorical_cross_entropy
 ./build/default/source/categorical_cross_entropy/categorical_cross_entropy --performance
+```
+
+Run the LeetGPU challenge 28 Gaussian-blur functional cases and its
+`512x512` image with a `7x7` kernel performance shape with:
+
+```bash
+./build/default/source/gaussian_blur/gaussian_blur
+./build/default/source/gaussian_blur/gaussian_blur --performance
 ```
 
 The performance output distinguishes CPU throughput, GPU kernel-only
