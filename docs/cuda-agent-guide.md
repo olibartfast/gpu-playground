@@ -69,6 +69,10 @@ BenchResult gemm_bench = benchmarkWithReset(
 Defaults are 3 warm-up + 10 timed iterations; pass explicit counts as trailing arguments when a
 reference implementation is slow enough that the full protocol dominates the harness runtime.
 
+For kernel-only timing, use `benchmarkDevice()` / `benchmarkDeviceWithReset()` (the wrapper's
+CUDA-event time is the callable's return value; the callable must block until device work
+completes) — see "Testing And Benchmarking" in AGENTS.md.
+
 ## Hard CUDA Rules
 
 - Use a thread block size that is a multiple of `32`.
@@ -110,10 +114,10 @@ reference implementation is slow enough that the full protocol dominates the har
 
 ## Practical Profiling Order
 
-1. Time CPU/GPU harnesses with `benchmark()` / `benchmarkWithReset()` from
-   `benchmark.h`; use `benchmark_helpers.h` to turn those latencies into
-   throughput, bandwidth, or speedup figures. State whether GPU timing is
-   kernel-only or end-to-end.
+1. Time CPU/GPU harnesses with `benchmark()` / `benchmarkWithReset()` from `benchmark.h`; use
+   `benchmarkDevice()` for CUDA-event kernel-only time alongside end-to-end. Use
+   `benchmark_helpers.h` to turn a result's `median_ms` into throughput, bandwidth, or speedup
+   figures. State whether GPU timing is kernel-only or end-to-end.
 2. Use `./cuda_perf_analysis.sh <binary>` for a first profiler pass.
 3. Use Nsight Systems for launch gaps and stream overlap.
 4. Use Nsight Compute for throughput, occupancy, stalls, and instruction mix.

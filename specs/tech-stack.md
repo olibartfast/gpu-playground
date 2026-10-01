@@ -6,6 +6,7 @@ Evidence: [CMake](../CMakeLists.txt) and [repository contract](../AGENTS.md).
 - Keep implementations in their existing backend directories and shared harnesses.
 - Each executable supplies its correctness harness; availability varies by backend.
 - Use `benchmark()` or `benchmarkWithReset()` for repeated timing, with warm-up,
-  medians, and spread. Identify device, precision, shape, and timing boundary.
+  medians, and spread; use `benchmarkDevice()` for a kernel-only timing boundary
+  alongside end-to-end. Identify device, precision, shape, and timing boundary.
 - Existing [CUDA](../docs/cuda-agent-guide.md) and
   [OpenCL](../docs/opencl-agent-guide.md) guides govern future optimization work.

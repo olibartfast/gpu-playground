@@ -1,3 +1,4 @@
+#include "benchmark.h"
 #include "benchmark_helpers.h"
 #include "cuda/categorical_cross_entropy.h"
 
@@ -40,21 +41,18 @@ TestCase make_random_test(const std::string &name, int n, int c, float low,
 
 bool run_test(const TestCase &test) {
   float expected = 0.0f;
-  const double cpu_ms = gpu_benchmark::average_milliseconds(
-      [&] {
-        expected = categorical_cross_entropy_cpu(
-            test.logits.data(), test.labels.data(), test.n, test.c);
-      },
-      0, 1);
+  BenchResult cpu = benchmark([&] {
+    expected = categorical_cross_entropy_cpu(
+        test.logits.data(), test.labels.data(), test.n, test.c);
+  });
 
-  float kernel_ms = 0.0f;
   float actual = 0.0f;
-  const double end_to_end_ms = gpu_benchmark::average_milliseconds(
-      [&] {
-        actual = categorical_cross_entropy_gpu(
-            test.logits.data(), test.labels.data(), test.n, test.c, &kernel_ms);
-      },
-      0, 1);
+  DeviceBenchResult gpu = benchmarkDevice([&] {
+    float kernel_ms = 0.0f;
+    actual = categorical_cross_entropy_gpu(
+        test.logits.data(), test.labels.data(), test.n, test.c, &kernel_ms);
+    return kernel_ms;
+  });
 
   const double class_items = static_cast<double>(test.n) * test.c;
   const double bytes = class_items * sizeof(float) +
@@ -68,22 +66,26 @@ bool run_test(const TestCase &test) {
   std::cout << std::left << std::setw(28) << test.name
             << (passed ? "PASS" : "FAIL") << "  N=" << test.n
             << "  C=" << test.c << "  expected=" << expected
-            << "  actual=" << actual << "  error=" << error << '\n'
-            << "  CPU:            " << cpu_ms << " ms, "
-            << gpu_benchmark::million_items_per_second(class_items, cpu_ms)
-            << " Mclass/s\n"
-            << "  GPU kernel:     " << kernel_ms << " ms, "
-            << gpu_benchmark::million_items_per_second(class_items, kernel_ms)
-            << " Mclass/s, "
-            << gpu_benchmark::gigabytes_per_second(bytes, kernel_ms)
-            << " GB/s\n"
-            << "  GPU end-to-end: " << end_to_end_ms << " ms, "
+            << "  actual=" << actual << "  error=" << error << '\n';
+  printBench("CPU:", cpu);
+  printBench("GPU kernel:", gpu.device);
+  printBench("GPU end-to-end:", gpu.end_to_end);
+  std::cout << "  CPU:            "
             << gpu_benchmark::million_items_per_second(class_items,
-                                                       end_to_end_ms)
+                                                       cpu.median_ms)
             << " Mclass/s\n"
-            << "  Speedup:        " << gpu_benchmark::speedup(cpu_ms, kernel_ms)
-            << "x kernel, " << gpu_benchmark::speedup(cpu_ms, end_to_end_ms)
-            << "x end-to-end\n";
+            << "  GPU kernel:     "
+            << gpu_benchmark::million_items_per_second(class_items,
+                                                       gpu.device.median_ms)
+            << " Mclass/s, "
+            << gpu_benchmark::gigabytes_per_second(bytes, gpu.device.median_ms)
+            << " GB/s\n"
+            << "  GPU end-to-end: "
+            << gpu_benchmark::million_items_per_second(
+                   class_items, gpu.end_to_end.median_ms)
+            << " Mclass/s\n";
+  printSpeedup("Speedup kernel:", cpu, gpu.device);
+  printSpeedup("Speedup end-to-end:", cpu, gpu.end_to_end);
   return passed;
 }
 
