@@ -135,7 +135,8 @@ gpu_playground/
 │   │   ├── benchmark.h            ← timing framework: benchmark()/benchmarkWithReset(), benchmarkDevice()/benchmarkDeviceWithReset(), summarize()
 │   │   ├── benchmark_helpers.h    ← unit converters (GFLOP/s, GB/s, items/s, speedup) over median_ms
 │   │   ├── opencl_c_helpers.h     ← C API: CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
-│   │   └── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
+│   │   ├── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
+│   │   └── python/                ← gpu_bench.py (torch-only benchmark()/print_bench()/check_close()/require()) + requirements.txt
 │   ├── gemm/                  ← each kernel: main.cpp + cuda/ + opencl/ + opencl_cpp/
 │   │   ├── main.cpp           ← backend-agnostic test harness (3-way #ifdef)
 │   │   ├── cuda/              ← CUDA kernel + host-pointer wrapper
@@ -159,7 +160,7 @@ explicitly in the table.
 | Kernel | Description |
 |--------|-------------|
 | `gemm` | General Matrix Multiplication with advanced tiling (α·A·B + β·C) |
-| `sigmoid` | Sigmoid activation — scalar and vectorized float4 variants |
+| `sigmoid` | Sigmoid activation — scalar and vectorized float4 variants. Python: Triton (`source/sigmoid/python/triton/sigmoid.py`) |
 | `softmax` | Numerically stable softmax using multi-stage reduction |
 | `prefix_sum` | Parallel inclusive prefix scan (Hillis-Steele) |
 | `geglu` | Gated Linear Unit with GELU activation (Transformer FFN) |
@@ -177,6 +178,7 @@ explicitly in the table.
 | `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
 | `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (CUDA-only, LeetGPU challenge 25) |
 | `gaussian_blur` | Naive 2D Gaussian blur / same-size convolution with zero padding, one thread per output pixel reading every tap from global memory (CUDA-only, LeetGPU challenge 28) |
+| `vector_addition` | Element-wise vector addition. Python-only: Triton and CuTe DSL (`source/vector_addition/python/triton/vector_addition.py`, `source/vector_addition/python/cute-dsl/vector_addition.py`); no CUDA/OpenCL target |
 
 Run the LeetGPU-compatible FP16 functional cases and its 100-million-element
 performance shape with:
@@ -210,6 +212,31 @@ kernel-only time alongside end-to-end, all in `source/utils/benchmark.h`.
 Shared unit converters (GFLOP/s, GB/s, million items/s, speedup), applied to
 a result's `median_ms`, live in `source/utils/benchmark_helpers.h` and can be
 reused by other synchronous kernel harnesses.
+
+### Python DSL backends
+
+Some kernels additionally ship optional Python DSL backends at
+`source/<kernel>/python/<dsl>/<kernel>.py`, `<dsl>` ∈ `triton`, `cute-dsl`. These are
+standalone scripts, not CMake targets, and a kernel may be Python-only (e.g.
+`vector_addition`, which has no CUDA/OpenCL target at all).
+
+Setup:
+
+```bash
+pip install -r source/utils/python/requirements.txt
+```
+
+Run from the repo root:
+
+```bash
+python source/sigmoid/python/triton/sigmoid.py
+python source/vector_addition/python/triton/vector_addition.py --performance
+python source/vector_addition/python/cute-dsl/vector_addition.py
+```
+
+Each script is validated with the shared `gpu_bench` helper and exits `0`/`1`/`77`
+(pass/fail/missing optional dependency, SKIPPED); see `AGENTS.md` ("Testing And
+Benchmarking") for the full contract.
 
 ### Planned Kernels
 

@@ -352,6 +352,19 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 
 ---
 
+## Optional: Python DSL backend
+
+A kernel may additionally (or, for a Python-only kernel like `vector_addition`, instead)
+ship a Python DSL backend at `source/<kernel>/python/<dsl>/<kernel>.py`, `<dsl>` ∈ `triton`,
+`cute-dsl`. These are standalone scripts run from the repo root (`python
+source/<kernel>/python/<dsl>/<kernel>.py [--performance]`), not CMake targets.
+
+Follow the shared `gpu_bench` contract: `require(...)` the DSL module before importing it so
+a missing dependency exits `77` (SKIPPED) instead of failing, and validate/time `solve(...)`
+through `gpu_bench`. See `AGENTS.md` ("Testing And Benchmarking") for the full contract.
+
+---
+
 ## Checklist
 
 - [ ] `cuda/<kernel>.h` — `#pragma once`, `cuda_runtime.h`, `__global__` decls, host-pointer wrapper decl
@@ -367,3 +380,5 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 - [ ] Root `Readme.md` — kernel inventory, backend coverage, and required build/run instructions
 - [ ] Thread block size is a multiple of 32
 - [ ] All CUDA API calls wrapped in `CUDA_CHECK`; all OpenCL C calls wrapped in `CL_CHECK`; OpenCL C++ uses exception handling
+- [ ] (optional) `python/<dsl>/<kernel>.py` — follows the `gpu_bench` contract (AGENTS.md), exits `0`/`1`/`77`
+- [ ] (optional) Root `Readme.md` — Python DSL backend noted in the kernel table / Python DSL backends section

@@ -18,7 +18,8 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
   "Agent Rules" and "Agent Roles" below). There are no per-tool agent trees.
 - `opencode.json` is the repo-local OpenCode config entrypoint.
 - `source/<kernel>/` contains the implementation for each kernel.
-- `source/utils/` contains shared CUDA and OpenCL helper code.
+- `source/utils/` contains shared CUDA and OpenCL helper code, plus
+  `source/utils/python/` for the shared Python benchmarking helper.
 
 ## Hard Rules
 
@@ -27,6 +28,9 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
   - CUDA code in `source/<kernel>/cuda/`
   - OpenCL C API code in `source/<kernel>/opencl/`
   - OpenCL C++ wrapper code in `source/<kernel>/opencl_cpp/`
+  - Optional Python DSL backends in `source/<kernel>/python/<dsl>/<kernel>.py`,
+    `<dsl>` ∈ `triton`, `cute-dsl`. These are standalone scripts, not CMake
+    targets, and a kernel may be Python-only (e.g. `vector_addition`).
 - Keep public headers backend-agnostic where the repo already follows that pattern.
 - Use `CUDA_CHECK` and `CL_CHECK` style error handling consistently.
 - Do not claim a CUDA or OpenCL optimization without either:
@@ -74,6 +78,14 @@ Profile a CUDA binary:
 
 ```bash
 ./cuda_perf_analysis.sh ./build/default/source/gemm/gemm
+```
+
+Python DSL backend (optional, no build step; run from repo root):
+
+```bash
+pip install -r source/utils/python/requirements.txt
+python source/sigmoid/python/triton/sigmoid.py
+python source/vector_addition/python/triton/vector_addition.py --performance
 ```
 
 ## Testing And Benchmarking
@@ -128,6 +140,17 @@ printBench("GPU kernel:", gpu.device);
 (`gpu_benchmark::giga_operations_per_second`, `gigabytes_per_second`, `million_items_per_second`,
 `speedup`) applied to a result's `median_ms` to report throughput, bandwidth, or a speedup ratio.
 
+Python DSL backend scripts (`source/<kernel>/python/<dsl>/<kernel>.py`) follow a parallel,
+torch-only contract via `source/utils/python/gpu_bench.py`: `require(...)` a dependency before
+importing the DSL so a missing package exits 77 (SKIPPED, never a pass) rather than failing;
+`benchmark()` does 3 warm-up + 10 timed iterations, timed with CUDA events, reduced to
+median/spread, and printed via `print_bench()` in the same format as the C++ `printBench()`.
+These timings are device-resident — inputs already on GPU, timing launch + kernel only — so
+compare them to the C++ `GPU kernel:` line (`benchmarkDevice().device`), never to a C++
+end-to-end line. A script validates `solve(...)` against a torch reference with stated
+ATOL/RTOL over sizes 1, a non-multiple of the block size, and >= 1e6, and ends with
+`Overall result: PASSED/FAILED`, exiting 0/1 accordingly.
+
 ## Standard Workflow
 
 1. Read `Readme.md`, this file, and the relevant backend guide.
@@ -177,6 +200,8 @@ Cursor, Copilot, OpenCode). They complement the Hard Rules above.
 - Return non-zero on validation failure.
 - Keep the harness focused on setup, invocation, timing, and comparison.
 - Keep naming and directory structure aligned with existing kernels.
+- Python DSL backend scripts (`python/<dsl>/<kernel>.py`) follow the `gpu_bench` contract
+  in "Testing And Benchmarking" above (exit 0/1/77 in place of a C++ return code).
 
 ### CUDA Optimization
 
