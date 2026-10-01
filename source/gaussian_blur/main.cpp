@@ -144,19 +144,13 @@ bool run_performance_test(const TestCase& test) {
                           test.kernel_cols);
     });
 
-    std::vector<float> kernel_times;
-    BenchResult gpu_bench = benchmark([&] {
+    DeviceBenchResult gpu = benchmarkDevice([&] {
         float kernel_ms = 0.0f;
         gaussian_blur_gpu(test.input.data(), test.kernel.data(), actual.data(),
                           test.input_rows, test.input_cols, test.kernel_rows,
                           test.kernel_cols, &kernel_ms);
-        kernel_times.push_back(kernel_ms);
+        return kernel_ms;
     });
-    // Drop warm-up samples, then take the median of the timed iterations.
-    kernel_times.erase(kernel_times.begin(),
-                       kernel_times.begin() + gpu_bench.warmup);
-    std::sort(kernel_times.begin(), kernel_times.end());
-    const double kernel_ms = kernel_times[kernel_times.size() / 2];
 
     float max_error = 0.0f;
     const bool passed = compare(expected, actual, max_error);
@@ -171,15 +165,16 @@ bool run_performance_test(const TestCase& test) {
               << test.kernel_rows << "x" << test.kernel_cols
               << "  max_error=" << max_error << '\n';
     printBench("CPU:", cpu_bench);
-    printBench("GPU end-to-end:", gpu_bench);
-    std::cout << "GPU kernel (median): " << kernel_ms << " ms, "
-              << gpu_benchmark::giga_operations_per_second(2.0 * taps, kernel_ms)
+    printBench("GPU end-to-end:", gpu.end_to_end);
+    printBench("GPU kernel:", gpu.device);
+    std::cout << "GPU kernel: "
+              << gpu_benchmark::giga_operations_per_second(2.0 * taps,
+                                                           gpu.device.median_ms)
               << " GFLOP/s, "
-              << gpu_benchmark::gigabytes_per_second(min_bytes, kernel_ms)
+              << gpu_benchmark::gigabytes_per_second(min_bytes, gpu.device.median_ms)
               << " GB/s (compulsory traffic)\n";
-    printSpeedup("Speedup (CPU/GPU end-to-end):", cpu_bench, gpu_bench);
-    std::cout << "Speedup (CPU/GPU kernel): "
-              << gpu_benchmark::speedup(cpu_bench.median_ms, kernel_ms) << "x\n";
+    printSpeedup("Speedup (CPU/GPU end-to-end):", cpu_bench, gpu.end_to_end);
+    printSpeedup("Speedup (CPU/GPU kernel):", cpu_bench, gpu.device);
     return passed;
 }
 

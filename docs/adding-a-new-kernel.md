@@ -259,6 +259,12 @@ If the kernel writes into a buffer it also reads (an in-place kernel, or GEMM's 
 Without it, each iteration measures different work and the correctness check afterwards compares against
 an accumulated result rather than a single clean pass.
 
+If the GPU wrapper exposes a kernel-only time (e.g. a `float* kernel_time_ms` out-parameter filled
+from CUDA events), use `benchmarkDevice(fn)` / `benchmarkDeviceWithReset(fn, reset)` instead of
+`benchmark()`/`benchmarkWithReset()`: `fn` returns that call's device-measured milliseconds, and the
+result's `end_to_end` and `device` fields are each a `BenchResult`, letting the harness report
+kernel-only time alongside host-side overhead.
+
 ---
 
 ## Step 2 — Add `CMakeLists.txt`
@@ -355,7 +361,7 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 - [ ] `opencl_cpp/<kernel>.h` — `#pragma once`, same backend-agnostic signatures as `opencl/<kernel>.h`
 - [ ] `opencl_cpp/<kernel>.cpp` — kernel string literal, `opencl_helpers.h`, `cl::` RAII objects, `try/catch (cl::Error)` for error handling
 - [ ] `main.cpp` — 3-way `#ifdef GPU_OPENCL_CPP_BACKEND` / `#elif GPU_OPENCL_BACKEND` / `#else` guard; calls only `*_cpu()` and `*_gpu()` wrappers; validates CPU vs GPU output
-- [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` in `source/utils/benchmark.h`, not a bare `steady_clock` pair
+- [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` (or `benchmarkDevice()` / `benchmarkDeviceWithReset()` for kernel-only time) in `source/utils/benchmark.h`, not a bare `steady_clock` pair
 - [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()` block; correct `set_source_files_properties` for CUDA path
 - [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` + `add_subdirectory`
 - [ ] Root `Readme.md` — kernel inventory, backend coverage, and required build/run instructions
