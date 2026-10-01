@@ -30,3 +30,15 @@ Branch: `feat/benchmark-device-timing`.
 | Deferred | CSV/JSON output, time-budget iterations, percentile reporting | Idea |
 
 Complexity Phase 3 (T-6) can use `benchmarkDevice` for kernel-only boundaries once Phase 1 lands.
+
+## Python DSL backends
+
+Specification: [Python backends](2026-10-01-python-backend/requirements.md).
+Branch: `feat/python-backend`.
+
+| Phase | Outcome | Status |
+|---|---|---|
+| 0 | Requirements, plan, validation, frozen acceptance | Specified 2026-10-01 |
+| 1 | `source/utils/python/gpu_bench.py` + requirements | Planned |
+| 2 | Migrate the 3 existing Triton/CuTe scripts; docs | Planned |
+| Idea | GPU-less `py_compile` CI job; Python ports of more kernels; CuTe DSL environment | Idea |
