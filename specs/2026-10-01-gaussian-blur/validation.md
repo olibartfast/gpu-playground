@@ -9,6 +9,19 @@
 | V-5 | R-6 | `git diff 17deb2d -- Readme.md CMakeLists.txt source/gaussian_blur/CMakeLists.txt` is empty; the public signatures in `gaussian_blur.h` are unchanged (`git diff -w` shows only pointer spacing) |
 | V-6 | all | Read-only reviewer verdict against this packet; changed paths are limited to `source/gaussian_blur/{main.cpp,cuda/*}` and this packet |
 
-## Evidence
+## Evidence (2026-10-01, RTX 3060 Laptop, default preset)
 
-Not started.
+- V-1 PASS: `git diff -w 17deb2d -- source/gaussian_blur/cuda` → one hunk, `static` added
+  to the kernel; the header produces no hunk under `-w`.
+- V-2 PASS: two `GPU_OPENCL` guards; the default build of `gaussian_blur` exits 0.
+  `cmake -DUSE_OPENCL=ON` configures (exit 0) with no `gaussian_blur` target.
+- V-3 PASS: functional run prints 10 `(3 warm-up + 10 timed)` lines (CPU and GPU × 5 tests).
+- V-4 PASS: functional exit 0, 5/5 PASS (max_error ≤ 6e-6), `Overall result: PASSED`;
+  `--performance` exit 0, max_error 3.1e-5 (within atol + rtol·|x|), `Overall result: PASSED`.
+- V-5 PASS: `git diff --stat 361239b` → only the 3 owned files; signatures unchanged.
+- V-6 APPROVE (read-only reviewer): no blocking findings. Two continuation-alignment
+  nits in `main.cpp` (lines 41/43, 93), off by one column; accepted as-is, since V-1
+  permits continuation alignment.
+
+Attempt ledger: attempt 1, one implementer (resumed once at its turn limit),
+acceptance passed; orchestrator re-ran V-1, V-4, V-5 independently.

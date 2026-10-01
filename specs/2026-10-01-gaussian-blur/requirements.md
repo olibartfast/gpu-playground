@@ -1,6 +1,6 @@
 # Requirements: gaussian_blur kernel, coherent with the CUDA examples
 
-Created: 2026-10-01. Status: specified; coherence changes not started.
+Created: 2026-10-01. Status: implemented and validated 2026-10-01 (see validation.md).
 Branch: `feat/gaussian-blur` (commit 17deb2d adds the kernel). This packet was
 written after that commit. It governs the changes needed before merging to `master`.
 
