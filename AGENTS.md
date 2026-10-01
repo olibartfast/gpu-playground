@@ -34,7 +34,8 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
   - a clear note that validation was not run.
 - Prefer small, attributable optimization changes over multi-variable rewrites.
 - Time every CPU/GPU path with `benchmark()` from `source/utils/benchmark.h`, never a single
-  `steady_clock` pair. Use `benchmarkWithReset()` when the output buffer is also an input.
+  `steady_clock` pair. Use `benchmarkWithReset()` when the output buffer is also an input. Use
+  `benchmarkDevice()` for kernel-only time (e.g. CUDA events) alongside end-to-end.
 - Every new kernel must update `Readme.md` in the same change. At minimum,
   update the kernel inventory, backend coverage, and any required build or run
   instructions.
@@ -102,10 +103,30 @@ BenchResult gemm_bench = benchmarkWithReset(
 ```
 
 Defaults are 3 warm-up + 10 timed iterations; pass explicit counts as trailing arguments when a slow
-reference implementation would otherwise dominate harness runtime.
+reference implementation would otherwise dominate harness runtime. `summarize()` turns
+already-collected samples (warm-up excluded) into a `BenchResult` directly, for harnesses that
+gather timings outside the `benchmark()`/`benchmarkWithReset()` loop.
 
-`source/utils/benchmark_helpers.h` is separate and complementary: it converts a latency into
-throughput, bandwidth, or a speedup ratio for harnesses that report those.
+For kernel-only time separate from host overhead, use `benchmarkDevice()` /
+`benchmarkDeviceWithReset()`: `fn` returns that call's device-measured milliseconds (e.g. CUDA
+events via a `float* kernel_time_ms` out-parameter), and the result's `end_to_end` and `device`
+fields are each a `BenchResult`. Sync contract: a timed callable must still block until its device
+work completes (a blocking D2H copy counts), otherwise only launch overhead is measured.
+
+```cpp
+// my_kernel_gpu stands for any host wrapper exposing a float* kernel_time_ms out-parameter.
+DeviceBenchResult gpu = benchmarkDevice([&] {
+    float kernel_ms = 0.0f;
+    out = my_kernel_gpu(a, b, n, &kernel_ms);
+    return kernel_ms;
+});
+printBench("GPU end-to-end:", gpu.end_to_end);
+printBench("GPU kernel:", gpu.device);
+```
+
+`source/utils/benchmark_helpers.h` is separate and complementary: it holds unit converters
+(`gpu_benchmark::giga_operations_per_second`, `gigabytes_per_second`, `million_items_per_second`,
+`speedup`) applied to a result's `median_ms` to report throughput, bandwidth, or a speedup ratio.
 
 ## Standard Workflow
 

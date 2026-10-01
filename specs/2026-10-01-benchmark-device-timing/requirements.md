@@ -1,6 +1,6 @@
 # Requirements: device-time benchmarking and one timing framework
 
-Created: 2026-10-01. Status: specified; implementation not started.
+Created: 2026-10-01. Status: implemented and validated 2026-10-01 (see validation.md).
 Branch: `feat/benchmark-device-timing`, rebased onto `master` after
 `feat/gaussian-blur` merges (see `specs/2026-10-01-gaussian-blur/`). Unblocked 2026-10-01:
 PR #6 merged (8b68407); this branch fast-forwarded onto it.

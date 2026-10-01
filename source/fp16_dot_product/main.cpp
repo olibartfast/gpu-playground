@@ -1,4 +1,5 @@
 #include "cuda/fp16_dot_product.h"
+#include "benchmark.h"
 #include "benchmark_helpers.h"
 
 #include <cmath>
@@ -34,32 +35,31 @@ TestCase make_random_test(const std::string& name,
     return test;
 }
 
-bool run_test(const TestCase& test) {
+bool run_test(const TestCase& test,
+             int cpu_warmup = kBenchWarmup,
+             int cpu_iterations = kBenchIterations) {
     const int n = static_cast<int>(test.a.size());
 
     float expected = 0.0f;
-    const double cpu_ms = gpu_benchmark::average_milliseconds(
+    BenchResult cpu = benchmark(
         [&] { expected = fp16_dot_product_cpu(test.a.data(), test.b.data(), n); },
-        0,
-        1);
+        cpu_warmup,
+        cpu_iterations);
 
-    float gpu_kernel_ms = 0.0f;
     float actual = 0.0f;
-    const double gpu_end_to_end_ms = gpu_benchmark::average_milliseconds(
-        [&] {
-            actual = fp16_dot_product_gpu(
-                test.a.data(), test.b.data(), n, &gpu_kernel_ms);
-        },
-        0,
-        1);
+    DeviceBenchResult gpu = benchmarkDevice([&] {
+        float kernel_ms = 0.0f;
+        actual = fp16_dot_product_gpu(test.a.data(), test.b.data(), n, &kernel_ms);
+        return kernel_ms;
+    });
 
     const double operations = 2.0 * static_cast<double>(n);
     const double cpu_gflops =
-        gpu_benchmark::giga_operations_per_second(operations, cpu_ms);
+        gpu_benchmark::giga_operations_per_second(operations, cpu.median_ms);
     const double gpu_kernel_gflops =
-        gpu_benchmark::giga_operations_per_second(operations, gpu_kernel_ms);
+        gpu_benchmark::giga_operations_per_second(operations, gpu.device.median_ms);
     const double gpu_end_to_end_gflops =
-        gpu_benchmark::giga_operations_per_second(operations, gpu_end_to_end_ms);
+        gpu_benchmark::giga_operations_per_second(operations, gpu.end_to_end.median_ms);
 
     const float error = std::fabs(expected - actual);
     const float tolerance =
@@ -72,18 +72,15 @@ bool run_test(const TestCase& test) {
               << "  expected=" << expected
               << "  actual=" << actual
               << "  error=" << error
-              << '\n'
-              << "  CPU:            " << cpu_ms << " ms, " << cpu_gflops
-              << " GFLOP/s\n"
-              << "  GPU kernel:     " << gpu_kernel_ms << " ms, "
-              << gpu_kernel_gflops << " GFLOP/s\n"
-              << "  GPU end-to-end: " << gpu_end_to_end_ms << " ms, "
-              << gpu_end_to_end_gflops << " GFLOP/s\n"
-              << "  Speedup:        "
-              << gpu_benchmark::speedup(cpu_ms, gpu_kernel_ms)
-              << "x kernel, "
-              << gpu_benchmark::speedup(cpu_ms, gpu_end_to_end_ms)
-              << "x end-to-end\n";
+              << '\n';
+    printBench("CPU:", cpu);
+    printBench("GPU kernel:", gpu.device);
+    printBench("GPU end-to-end:", gpu.end_to_end);
+    std::cout << "  CPU:            " << cpu_gflops << " GFLOP/s\n"
+              << "  GPU kernel:     " << gpu_kernel_gflops << " GFLOP/s\n"
+              << "  GPU end-to-end: " << gpu_end_to_end_gflops << " GFLOP/s\n";
+    printSpeedup("Speedup kernel:", cpu, gpu.device);
+    printSpeedup("Speedup end-to-end:", cpu, gpu.end_to_end);
     return passed;
 }
 
@@ -123,7 +120,8 @@ int main(int argc, char** argv) {
         std::mt19937 generator(0);
         const TestCase performance =
             make_random_test("performance", 100000000, -1.0f, 1.0f, generator);
-        return run_test(performance) ? 0 : 1;
+        // n=1e8: a slow CPU reference would otherwise dominate harness runtime.
+        return run_test(performance, 1, 3) ? 0 : 1;
     }
 
     bool passed = true;

@@ -295,13 +295,22 @@ fn main():
 
 ## Notes on Performance and Usage
 
-C++ kernel harnesses can include `benchmark_helpers.h` from `source/utils/`
-to measure any synchronous CPU or GPU wrapper:
+C++ kernel harnesses time any synchronous CPU or GPU wrapper with `benchmark()` /
+`benchmarkDevice()` from `source/utils/benchmark.h`, then convert the result's `median_ms` into a
+throughput or bandwidth figure with `benchmark_helpers.h`:
 
 ```cpp
-double ms = gpu_benchmark::average_milliseconds(run_kernel, 2, 20);
-double gflops = gpu_benchmark::giga_operations_per_second(operation_count, ms);
-double bandwidth = gpu_benchmark::gigabytes_per_second(bytes_moved, ms);
+BenchResult gpu = benchmark([&] { run_kernel(); });
+double gflops = gpu_benchmark::giga_operations_per_second(operation_count, gpu.median_ms);
+double bandwidth = gpu_benchmark::gigabytes_per_second(bytes_moved, gpu.median_ms);
+
+// Kernel-only time (e.g. CUDA events) alongside end-to-end:
+DeviceBenchResult device = benchmarkDevice([&] {
+    float kernel_ms = 0.0f;
+    run_kernel(&kernel_ms);
+    return kernel_ms;
+});
+double kernel_gflops = gpu_benchmark::giga_operations_per_second(operation_count, device.device.median_ms);
 ```
 
 GPU wrappers must synchronize before returning. Report kernel-only and
