@@ -29,4 +29,28 @@ guaranteed evidence for R-3.
   host g++ against the stashed pre-spec header prints `PASSED (0 failures)`. This
   shows the checks can pass. It is not evidence for the implementation, which
   restarts from T-1.
-- V-1..V-8 against the implementation: not started.
+- 2026-10-01, implementation (RTX 3060 Laptop, default preset): `check.sh` exit 0,
+  first after T-1..T-3 (run by the T-2 worker) and again after the review fixes (run
+  by the orchestrator on the final tree).
+  - V-1/V-4: `summarize_check` `PASSED (0 failures)` with host g++ `-Werror`.
+  - V-2: `benchmark.h` includes `<algorithm> <chrono> <cmath> <cstdio> <utility> <vector>`.
+  - V-3: gemm, softmax, sigmoid and gaussian_blur exit 0 and print `(3 warm-up + 10 timed)`.
+  - V-5: `git grep average_milliseconds -- ':!specs'` is empty.
+  - V-6: fp16_dot_product, categorical_cross_entropy and gaussian_blur exit 0 with CPU / GPU
+    kernel / GPU end-to-end `printBench` lines. fp16 `--performance` passes, with CPU
+    `(1 warm-up + 3 timed)`. Gaussian `--performance`: kernel median 0.0635 ms
+    (404.6 GFLOP/s), end-to-end 1.25 ms, CPU 127.5 ms.
+  - Note: gaussian's kernel median for 10 samples is now the mean of the two middle
+    samples (R-1), rather than the upper-middle sample used by the old hand-rolled code.
+- V-7: the documentation identifiers were checked against the headers by the T-3 worker
+  and by the reviewer.
+- V-8 APPROVE (read-only reviewer), no blocking findings. Fixed before commit by a
+  corrective packet:
+  - N-1: added `<utility>` for `std::move`.
+  - N-2: the AGENTS.md snippet declares `kernel_ms` inside the lambda and uses an
+    illustrative wrapper.
+  - N-3: the cuda-agent-guide copy is replaced by a pointer to AGENTS.md.
+  Accepted as-is: N-4 (continuation alignment, a redundant rate label), N-5 (empty
+  `summarize` keeps `warmup`, per D-2), N-6 (longer header comments).
+- OpenCL builds were not rebuilt locally for this change. `benchmark.h` uses standard
+  headers only (V-1/V-2); the PR's OpenCL CI covers both OpenCL backends.

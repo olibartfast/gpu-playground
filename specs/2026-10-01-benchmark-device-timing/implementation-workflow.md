@@ -31,4 +31,9 @@ concurrently, so the shared `build/default` tree is never built by two workers a
 
 | Attempt | Packet | Revision | Role/model | Acceptance exit | Evidence | Interventions |
 |---|---|---|---|---|---|---|
-| 0 | T-1, T-3 | pre-spec | implementer | not run | stopped; edits stashed unreviewed | user halted: spec first |
+| 0 | T-1, T-3 | pre-spec | implementer | not run | stopped; edits stashed unreviewed (superseded) | user halted: spec first |
+| 1 | T-1 | 49b3ce4 | implementer | phase gate V-1..V-4 pass | summarize_check PASSED; build ok; 4 harnesses ok | none |
+| 1 | T-2 | 49b3ce4 + T-1 | implementer | check.sh exit 0 | full acceptance | hit turn limit while acceptance ran; finished on its own |
+| 1 | T-3 | 49b3ce4 + T-1 | implementer | own checks pass | grep/diff-check/API names | resumed twice at its turn limit |
+| 1 | V-8 | working tree | reviewer | APPROVE | N-1..N-6 non-blocking | — |
+| 2 | N-1..N-3 fix | working tree | implementer (fresh) | check.sh exit 0 (orchestrator re-run) | full acceptance on final tree | hit turn limit before its checks; orchestrator ran them |

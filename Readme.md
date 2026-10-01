@@ -132,7 +132,8 @@ gpu_playground/
 ├── source/                    ← all C++/CUDA/OpenCL source code
 │   ├── utils/                 ← shared utility libraries
 │   │   ├── cuda_helpers.h         ← CUDA_CHECK macro + getTime()
-│   │   ├── benchmark_helpers.h    ← reusable latency, throughput, bandwidth + speedup helpers
+│   │   ├── benchmark.h            ← timing framework: benchmark()/benchmarkWithReset(), benchmarkDevice()/benchmarkDeviceWithReset(), summarize()
+│   │   ├── benchmark_helpers.h    ← unit converters (GFLOP/s, GB/s, items/s, speedup) over median_ms
 │   │   ├── opencl_c_helpers.h     ← C API: CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
 │   │   └── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
 │   ├── gemm/                  ← each kernel: main.cpp + cuda/ + opencl/ + opencl_cpp/
@@ -202,10 +203,13 @@ Run the LeetGPU challenge 28 Gaussian-blur functional cases and its
 ```
 
 The performance output distinguishes CPU throughput, GPU kernel-only
-throughput, and GPU end-to-end throughput. Shared calculations for GFLOP/s,
-GB/s, million items/s, and speedup live in
-`source/utils/benchmark_helpers.h` and can be reused by other synchronous
-kernel harnesses.
+throughput, and GPU end-to-end throughput. Timing goes through
+`benchmark()`/`benchmarkWithReset()` for host-side timing and
+`benchmarkDevice()`/`benchmarkDeviceWithReset()` for device-measured
+kernel-only time alongside end-to-end, all in `source/utils/benchmark.h`.
+Shared unit converters (GFLOP/s, GB/s, million items/s, speedup), applied to
+a result's `median_ms`, live in `source/utils/benchmark_helpers.h` and can be
+reused by other synchronous kernel harnesses.
 
 ### Planned Kernels
 

@@ -24,9 +24,9 @@ Branch: `feat/benchmark-device-timing`.
 | Phase | Outcome | Status |
 |---|---|---|
 | Pre | `gaussian_blur` coherent and merged to `master` ([spec](2026-10-01-gaussian-blur/requirements.md), merged in PR #6) | Done 2026-10-01 |
-| 0 | Requirements, plan, validation, frozen acceptance | Specified 2026-10-01 |
-| 1 | `summarize` + `benchmarkDevice` in `benchmark.h` | Planned |
-| 2 | Retire `average_milliseconds`; migrate three harnesses (incl. `gaussian_blur`); docs | Planned |
+| 0 | Requirements, plan, validation, frozen acceptance | Done 2026-10-01 |
+| 1 | `summarize` + `benchmarkDevice` in `benchmark.h` | Done 2026-10-01 |
+| 2 | Retire `average_milliseconds`; migrate three harnesses (incl. `gaussian_blur`); docs | Done 2026-10-01 |
 | Deferred | CSV/JSON output, time-budget iterations, percentile reporting | Idea |
 
 Complexity Phase 3 (T-6) can use `benchmarkDevice` for kernel-only boundaries once Phase 1 lands.
