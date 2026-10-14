@@ -40,7 +40,7 @@ sudo apt-get install nvidia-cuda-toolkit
 
 ### For Python, Mojo, CUTLASS, and other frameworks:
 
-See [docs/external-frameworks.md](docs/external-frameworks.md) for setup instructions.
+See [docs/setup/external-frameworks.md](docs/setup/external-frameworks.md) for setup instructions.
 
 ## Building the Projects
 
@@ -123,7 +123,7 @@ Each kernel has a corresponding `GPU_ENABLE_<KERNEL>` option flag (all `ON` by d
 
 ### Build on Google Colab
 
-You can also build and run the C++/CUDA kernels on Google Colab using a free GPU runtime. See the [Building on Google Colab](docs/building-on-google-colab.md) guide for full instructions.
+You can also build and run the C++/CUDA kernels on Google Colab using a free GPU runtime. See the [Building on Google Colab](docs/setup/google-colab.md) guide for full instructions.
 
 ## Project Structure
 
@@ -146,7 +146,8 @@ gpu_playground/
 ├── CMakeLists.txt             ← root build file; USE_OPENCL / USE_OPENCL_CPP + GPU_ENABLE_* flags
 ├── CMakePresets.json          ← build presets (default, native, ampere, release)
 ├── cuda_perf_analysis.sh      ← performance profiling script
-├── docs/                      ← development guidelines and best practices
+├── docs/                      ← documentation index (docs/README.md) and guides
+├── specs/                     ← dated feature packages for planned changes
 ├── gpu-mode/                  ← GPU MODE competition tools and submissions
 └── .devcontainer/             ← Docker-based CUDA development environment
 ```
@@ -241,7 +242,7 @@ Benchmarking") for the full contract.
 ### Planned Kernels
 
 - `lora_linear` is design-only and has no build target yet. See the
-  [LoRA linear implementation plan](docs/lora-linear-implementation-plan.md).
+  [LoRA linear implementation plan](specs/2026-07-14-lora-linear/plan.md).
 
 ### GPU MODE Competition
 - `gpu-mode/` - GPU MODE kernel competition tools and submissions
@@ -250,20 +251,8 @@ Benchmarking") for the full contract.
   - `submissions/` - Example kernel submissions (e.g., NVFP4 GEMM baseline)
 
 ### Documentation
-- `docs/` - Development guidelines and best practices
-  - `algorithmic-complexity.md` - Shared cost model (work/depth/space/traffic), improvement taxonomy, and kernel inventory for the per-kernel complexity studies
-  - `complexity/` - Per-kernel complexity studies (Phase 1 pilots: `sigmoid`, `prefix_sum`, `gemm`)
-  - `agentic-getting-started.md` - Entry point for agentic workflows in this repo
-  - `claude-code-guide.md` - Claude Code workflow and expectations
-  - `codex-guide.md` - Codex workflow and expectations
-  - `cuda-agent-guide.md` - Consolidated CUDA optimization rules for coding agents
-  - `opencl-agent-guide.md` - Consolidated OpenCL optimization rules for coding agents
-  - `opencl-3.1-migration-plan.md` - Staged OpenCL 3.1 migration scope and completion criteria
-  - `lora-linear-implementation-plan.md` - Planned CUDA LoRA linear kernel design
-  - `EXAMPLES.md` - Detailed code examples and benchmarks
-  - `building-on-google-colab.md` - Step-by-step guide to build and run C++/CUDA kernels on Google Colab
-  - `adding-a-new-kernel.md` - How-To adding a new kernel to the project
-  - `external-frameworks.md` - Setup instructions for external frameworks (CUTLASS, Mojo, Triton, TinyGrad)
+- `docs/` - Documentation index and guides; start at [docs/README.md](docs/README.md)
+- `specs/` - Dated specifications (`requirements.md`, `plan.md`, `validation.md`) for planned or in-flight work
 
 ### Development Tools
 - `.devcontainer/` - Docker-based CUDA development environment (VS Code Dev Containers)
@@ -271,9 +260,9 @@ Benchmarking") for the full contract.
 
 ## Examples
 
-For detailed code examples and benchmarks, see [EXAMPLES.md](https://github.com/olibartfast/gpu-playground/blob/master/docs/EXAMPLES.md).
+For detailed code examples and benchmarks, see [docs/guides/examples.md](docs/guides/examples.md).
 
-For agentic workflows and repo-specific coding-agent guidance, start with [AGENTS.md](AGENTS.md) and [docs/agentic-getting-started.md](docs/agentic-getting-started.md).
+For agentic workflows and repo-specific coding-agent guidance, start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md).
 
 ## Further Resources and References
 
@@ -292,7 +281,7 @@ For agentic workflows and repo-specific coding-agent guidance, start with [AGENT
 * [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile) - cuTile Python programming language for GPUs
 * [Mojo Documentation](https://docs.modular.com/mojo)
 
-For setup instructions for these frameworks, see [docs/external-frameworks.md](docs/external-frameworks.md).
+For setup instructions for these frameworks, see [docs/setup/external-frameworks.md](docs/setup/external-frameworks.md).
 
 ### NVIDIA CCCL (CUDA C++ Core Libraries)
 * [CCCL GitHub](https://github.com/NVIDIA/cccl) - Unified repository containing:

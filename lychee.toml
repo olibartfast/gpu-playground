@@ -1,0 +1,11 @@
+# Lychee link-checker configuration for repository markdown.
+# CI runs: lychee --config lychee.toml './**/*.md'
+
+max_concurrency = 8
+max_retries = 2
+retry_wait_time = 2
+no_progress = true
+
+# registry.khronos.org answers 403 to CI/datacenter requests. The links are
+# valid in a browser; verify them manually if this entry is removed.
+exclude = ["https://registry.khronos.org"]

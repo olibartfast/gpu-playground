@@ -1,6 +1,10 @@
-# CUDA Agent Guide
+# CUDA Optimization Guide
 
-This is the consolidated CUDA optimization guide for agentic work in this repo. It replaces the older split between `cuda-copilot-rules.md` and `cuda_best_practice_agent_style.md`.
+> Audience: agents · Applies to: CUDA · Last reviewed: 2026-10
+
+This is the consolidated CUDA optimization guide for this repository. It replaces
+the earlier split agent guides and absorbs `cuda_best_practices_guide.md` as the
+[Common mistakes](#common-mistakes-and-fixes) section below.
 
 The priority ordering in the optimization playbook and the measurement protocol below are taken from
 *CUDA Agent: Large-Scale Agentic RL for High-Performance CUDA Kernel Generation*
@@ -68,10 +72,8 @@ BenchResult gemm_bench = benchmarkWithReset(
 
 Defaults are 3 warm-up + 10 timed iterations; pass explicit counts as trailing arguments when a
 reference implementation is slow enough that the full protocol dominates the harness runtime.
-
-For kernel-only timing, use `benchmarkDevice()` / `benchmarkDeviceWithReset()` (the wrapper's
-CUDA-event time is the callable's return value; the callable must block until device work
-completes) — see "Testing And Benchmarking" in AGENTS.md.
+For kernel-only time (CUDA events) alongside end-to-end time, use `benchmarkDevice()` /
+`benchmarkDeviceWithReset()` as described in `AGENTS.md`.
 
 ## Hard CUDA Rules
 
@@ -91,6 +93,9 @@ completes) — see "Testing And Benchmarking" in AGENTS.md.
 - Prefer structure-of-arrays layouts when they improve coalescing.
 - Minimize host-device transfers and batch them where possible.
 - Use pinned host memory for frequent transfer paths.
+
+Memory hierarchy, fastest to slowest: registers → shared memory / L1 → L2 → global memory.
+Moving reuse up that list pays only when the reuse is real; measure before adding a staging layer.
 
 ## Occupancy And Scheduling
 
@@ -112,12 +117,39 @@ completes) — see "Testing And Benchmarking" in AGENTS.md.
 - Make precision policy explicit: FP32, mixed precision, or lower precision.
 - Use fast math only when the accuracy budget is clear.
 
+## Common Mistakes And Fixes
+
+| Mistake | Fix |
+|---|---|
+| ❌ `new`/`malloc` inside device code | Allocate on the host (`cudaMalloc`, or `cudaMallocAsync` for stream-ordered work) and pass device pointers. |
+| ❌ Unchecked API calls and launches | Wrap every runtime call in `CUDA_CHECK`; call `CUDA_CHECK(cudaGetLastError())` after every launch. |
+| ❌ Strided access: `data[threadIdx.x * stride]` | Index so adjacent threads touch adjacent addresses; stage genuinely irregular access through shared memory. |
+| ❌ Block size chosen by habit | Start at 128-256 threads and justify the final choice with measurements. |
+| ❌ `__launch_bounds__` sprinkled in without evidence | Inspect register and shared-memory pressure first; add launch bounds only with profiler evidence. |
+| ❌ Timing a single call | Use `benchmark()` / `benchmarkWithReset()` (warm-up + repeated iterations, median + spread). |
+| ❌ Host/device pointer mix-ups and leaked allocations | Keep allocation, transfer, and free together in the host wrapper; release every buffer on every path. |
+
+A minimal error-check and coalescing pattern:
+
+```cpp
+// ❌ unchecked, uncoalesced
+cudaMalloc((void**)&ptr, size);
+kernel<<<grid, block>>>(ptr);
+data[threadIdx.x * stride] = value;
+
+// ✅ checked, coalesced
+CUDA_CHECK(cudaMalloc((void**)&ptr, size));
+kernel<<<grid, block>>>(ptr);
+CUDA_CHECK(cudaGetLastError());
+data[blockIdx.x * blockDim.x + threadIdx.x] = value;
+```
+
 ## Practical Profiling Order
 
-1. Time CPU/GPU harnesses with `benchmark()` / `benchmarkWithReset()` from `benchmark.h`; use
-   `benchmarkDevice()` for CUDA-event kernel-only time alongside end-to-end. Use
-   `benchmark_helpers.h` to turn a result's `median_ms` into throughput, bandwidth, or speedup
-   figures. State whether GPU timing is kernel-only or end-to-end.
+1. Time CPU/GPU harnesses with `benchmark()` / `benchmarkWithReset()` from
+   `benchmark.h`; use `benchmark_helpers.h` to turn those latencies into
+   throughput, bandwidth, or speedup figures. State whether GPU timing is
+   kernel-only or end-to-end.
 2. Use `./cuda_perf_analysis.sh <binary>` for a first profiler pass.
 3. Use Nsight Systems for launch gaps and stream overlap.
 4. Use Nsight Compute for throughput, occupancy, stalls, and instruction mix.
