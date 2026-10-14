@@ -1,5 +1,7 @@
 # Adding a New Kernel
 
+> Audience: humans, agents · Applies to: all · Last reviewed: 2026-10
+
 This guide walks through adding a self-contained CUDA + OpenCL kernel to the `source/` directory.
 
 The three-backend layout is the default. A task may explicitly add a CUDA-only
@@ -84,7 +86,7 @@ void myKernel_gpu(const float* h_input, float* h_output, int n) {
 }
 ```
 
-Key rules (see `docs/cuda-agent-guide.md` for the full list):
+Key rules (see [`optimization/cuda.md`](../optimization/cuda.md) for the full list):
 - Thread block size must be a multiple of 32; start with 128–256 threads/block.
 - Wrap every CUDA API call with `CUDA_CHECK`.
 - Call `cudaGetLastError()` after every kernel launch.

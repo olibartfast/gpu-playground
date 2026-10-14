@@ -22,7 +22,7 @@ can reduce. Big-O is a notation: not every algorithm is O(n).
   source-derived bounds, hypotheses, and measured results. Runtime observations
   support a model; they do not prove its asymptotic bound.
 - **R-5 — Discoverability:** deliver a common guide at
-  `docs/algorithmic-complexity.md`, individual studies at
+  `docs/complexity/README.md`, individual studies at
   `docs/complexity/<kernel>.md`, and Readme inventory links. Update the existing
   new-kernel guide to request complexity documentation alongside new kernels.
 - **R-6 — Validation:** define scaling experiments before changes; require

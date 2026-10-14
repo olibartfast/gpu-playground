@@ -1,5 +1,7 @@
 # Phase 1 attempt ledger (planner-recorded)
 
+> Audience: agents · Applies to: all · Last reviewed: 2026-10
+
 Starting revision: `77038c4` (clean tree, master). Spec: `specs/2026-09-20-kernel-complexity/`.
 Acceptance (specifier-frozen, outside worker paths): `python3 /tmp/opencode/phase1_acceptance.py`
 Permission model: no harness-enforced per-worker allowlist — file ownership advisory;

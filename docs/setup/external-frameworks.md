@@ -1,5 +1,7 @@
 # External Frameworks Setup
 
+> Audience: humans · Applies to: all · Last reviewed: 2026-10
+
 This page covers setup instructions for GPU frameworks referenced in this repository's resources but not yet implemented as kernels here. They are useful for experimentation and comparison.
 
 ## Python Frameworks
@@ -49,7 +51,7 @@ cmake .. -DCUTLASS_NVCC_ARCHS='90a' -DCUTLASS_LIBRARY_KERNELS=cutlass_tensorop_s
 
 * [CUTLASS GitHub](https://github.com/NVIDIA/cutlass)
 * [CUTLASS Documentation](https://docs.nvidia.com/cutlass)
-* [CUTLASS CuTe DSL](https://docs.nvidia.com/cutlass/media/docs/pythonDSL/cute_dsl.html)
+* [CUTLASS CuTe DSL](https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/cute_dsl.html)
 * [CuTe Quick Start](https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/quick_start.html)
 * [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile)
 * [TinyGrad GitHub](https://github.com/geohot/tinygrad)

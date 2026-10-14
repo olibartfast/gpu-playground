@@ -56,7 +56,7 @@ part of the OpenCL migration unless a separate task first adds an OpenCL backend
    - Record device, driver, OpenCL platform version, OpenCL C version, and whether fallback mode was used.
 
 7. Update docs after implementation.
-   - Update `docs/opencl-agent-guide.md` with the repository's OpenCL 3.1 policy.
+   - Update `docs/optimization/opencl.md` with the repository's OpenCL 3.1 policy.
    - Update `Readme.md` build notes if OpenCL 3.1 headers become a required dependency.
    - Keep migration notes in this file until all OpenCL kernels have been validated.
 

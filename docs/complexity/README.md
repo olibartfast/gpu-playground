@@ -1,7 +1,9 @@
 # Algorithmic Complexity Studies: Shared Guide and Kernel Inventory
 
+> Audience: humans, agents · Applies to: all · Last reviewed: 2026-10
+
 Status: planning-phase guide for the [kernel-complexity
-spec](../specs/2026-09-20-kernel-complexity/requirements.md). This document
+spec](../../specs/2026-09-20-kernel-complexity/requirements.md). This document
 defines the shared cost model, vocabulary, improvement taxonomy, evidence
 rules, and per-kernel study template, and it reconciles the current kernel
 inventory. **No per-kernel studies, speedups, or measured results are claimed
@@ -40,7 +42,7 @@ Every claim about the current implementation links to a tracked symbol:
   `source/<kernel>/opencl/…`, `source/<kernel>/opencl_cpp/…`.
 - Reference/harness: `source/<kernel>/main.cpp` and the CPU function inside
   the implementation file (e.g. `sigmoid_cpu` in
-  [`source/sigmoid/cuda/sigmoid.cpp`](../source/sigmoid/cuda/sigmoid.cpp)).
+  [`source/sigmoid/cuda/sigmoid.cpp`](../../source/sigmoid/cuda/sigmoid.cpp)).
 - CMake targets for backend coverage: root `CMakeLists.txt` plus each
   `source/<kernel>/CMakeLists.txt`.
 
@@ -222,14 +224,14 @@ summary verified against directory/source structure:
 | deep_learning_inference | yes | yes | — | no study yet | no opencl_cpp |
 | fp16_dot_product | yes | — | — | no study yet | CUDA-only |
 | geglu | yes | yes | yes | no study yet | |
-| gemm | yes | yes | yes | phase-1 pilot ([study](complexity/gemm.md)) | tiled `gemmTiled`, 2×2-register `gemmTiled2x2` |
+| gemm | yes | yes | yes | phase-1 pilot ([study](gemm.md)) | tiled `gemmTiled`, 2×2-register `gemmTiled2x2` |
 | interleave_arrays | yes | yes | yes | no study yet | |
 | matrix_mul | yes | yes | yes | no study yet | |
 | matrix_transpose | yes | yes | yes | no study yet | |
-| prefix_sum | yes | yes | yes | phase-1 pilot ([study](complexity/prefix_sum.md)) | Hillis-Steele blocked scan (see §3 pilot notes) |
+| prefix_sum | yes | yes | yes | phase-1 pilot ([study](prefix-sum.md)) | Hillis-Steele blocked scan (see §3 pilot notes) |
 | reverse_array | yes | yes | yes | no study yet | |
 | rgb_to_grayscale | yes | yes | yes | no study yet | |
-| sigmoid | yes | yes | yes | phase-1 pilot ([study](complexity/sigmoid.md)) | scalar `sigmoid_kernel`, vectorized `sigmoid_kernel2` |
+| sigmoid | yes | yes | yes | phase-1 pilot ([study](sigmoid.md)) | scalar `sigmoid_kernel`, vectorized `sigmoid_kernel2` |
 | silu | yes | yes | yes | no study yet | |
 | softmax | yes | yes | yes | no study yet | |
 | spmv | yes | yes | yes | no study yet | |
@@ -239,7 +241,7 @@ summary verified against directory/source structure:
 | vector_addition | pending | pending | pending | no study yet | Python-only; no C++ harness/CMake |
 
 ("phase-1 pilot" means the pilot study linked in that row, delivered with this
-phase per the [plan](../specs/2026-09-20-kernel-complexity/plan.md); it does not
+phase per the [plan](../../specs/2026-09-20-kernel-complexity/plan.md); it does not
 prestate any numbers beyond what the linked study derives.)
 
 ## 9. Pilot teaching examples (checked against the pilots, in spirit verbatim)
@@ -255,7 +257,7 @@ ideal `T_P = max(Θ(n/P), Θ(1))`. **Linear work remains linear**: no
 restructuring of elementwise code changes the Big-O; the only asymptotic floor
 besides `n` is reading `n` inputs and writing `n` outputs. Vectorization —
 `float4` loads/stores, four elements per thread with `__expf`
-([`sigmoid_kernel2`](../source/sigmoid/cuda/sigmoid.cpp)) — **changes
+([`sigmoid_kernel2`](../../source/sigmoid/cuda/sigmoid.cpp)) — **changes
 constants** (fewer memory transactions, cheaper exponentials) and changes
 numerics (`__expf` vs `expf` precision), not the asymptotic class. Its
 scalar tail loop keeps correctness at non-multiple-of-4 sizes.
@@ -266,7 +268,7 @@ Two ideal schemes for the inclusive prefix sum over `n` elements:
 
 - **Serial** scan: `W = Θ(n)`, `S = Θ(n)` — no parallelism without rework.
 - **Hillis–Steele** (doubling offsets `offset *= 2`,
-  [`block_inclusive_scan`](../source/prefix_sum/cuda/prefix_sum.cpp)): each
+  [`block_inclusive_scan`](../../source/prefix_sum/cuda/prefix_sum.cpp)): each
   of `n` lanes does `log2 n` steps → **work `W = Θ(n log n)`**, **depth
   `S = Θ(log n)`**. More total work, far shorter critical path.
 - **Work-efficient** scan (Blelloch-style up/down sweep): **`W = Θ(n)`**,
@@ -295,7 +297,7 @@ Classical dense `C[M×N] = A[M×K]·B[K×N]` requires `M·N·K` multiply-adds:
 every output element touches every element of its `K`-dimension strip, so
 **`W = Θ(MNK)`, `S = Θ(K)` for a serial per-output K loop** (one thread
 accumulates a scalar over K). Tiling with shared memory
-([`gemmTiled`](../source/gemm/cuda/gemm.cpp), 2×2 register variant
+([`gemmTiled`](../../source/gemm/cuda/gemm.cpp), 2×2 register variant
 `gemmTiled2x2`) does **not** change this: each output still consumes K
 products, so **`O(MNK)` arithmetic persists under ordinary tiling — tiling
 changes reuse and traffic** (each A/B element is read `O(N/TILE_K)` /
@@ -321,11 +323,11 @@ applies (W-bound vs S-bound) rather than assuming depth wins.
 ## 10. Coverage obligations going forward
 
 - Phase 2 writes one study per implemented kernel, batched per the
-  [plan](../specs/2026-09-20-kernel-complexity/plan.md); each study follows
+  [plan](../../specs/2026-09-20-kernel-complexity/plan.md); each study follows
   §7 exactly and links from Readme once phase 3 lands those links.
 - Pending entries (`lora_linear`, `vector_addition`) get status notes only —
   never invented implementation complexity or speedup claims.
-- Every new kernel added by [`docs/adding-a-new-kernel.md`](adding-a-new-kernel.md)
+- Every new kernel added by [`../guides/adding-a-new-kernel.md`](../guides/adding-a-new-kernel.md)
   must produce a complexity study with its change (per R-5).
 - Unimplemented ideas, per §4/§6, stay labeled hypothesis until measured —
   no estimated speedup may ever be presented as measured.

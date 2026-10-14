@@ -1,19 +1,10 @@
 # GPU Programming Examples
 
+> Audience: humans · Applies to: all · Last reviewed: 2026-10
+
 This document contains practical examples of GPU programming using different languages and frameworks.
-
-## Running on Google Colab
-
-Google Colab offers free GPU access with minimal setup:
-
-1. Go to [Google Colab](https://colab.research.google.com).
-2. Open a new notebook.
-3. Enable GPU: `Runtime > Change runtime type > GPU`.
-4. Run Python snippets directly in Colab.
-
-C++ / CUDA code from this repository can also be built and run on Colab using the shell (`!` commands). See the [Building on Google Colab](building-on-google-colab.md) guide for full instructions.
-
-> **Note:** Mojo requires a local environment with the Mojo SDK installed, as Colab does not support it natively.
+For building this repository's C++/CUDA kernels on Google Colab, see the
+[Google Colab setup guide](../setup/google-colab.md).
 
 ## Example 1: GPU Testing with Python (PyTorch)
 

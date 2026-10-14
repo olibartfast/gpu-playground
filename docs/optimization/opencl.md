@@ -1,8 +1,10 @@
-# OpenCL Agent Guide
+# OpenCL Optimization Guide
+
+> Audience: agents · Applies to: OpenCL · Last reviewed: 2026-10
 
 This is the consolidated OpenCL optimization guide for agentic work in this repo.
-For staged OpenCL 3.1 work and its completion criteria, also read
-[`opencl-3.1-migration-plan.md`](opencl-3.1-migration-plan.md).
+For staged OpenCL 3.1 work and its completion criteria, see the
+[OpenCL 3.1 migration plan](../../specs/2026-05-28-opencl-3.1-migration/plan.md).
 
 ## Operating Loop
 
@@ -72,7 +74,7 @@ warm-up calls, then repeated timed iterations reported as median plus spread. Co
 If the output buffer is also an input, pass a `reset` to `benchmarkWithReset()` so every iteration
 starts from the same state, with the reset excluded from the timed region.
 
-See [`cuda-agent-guide.md`](cuda-agent-guide.md) for the full protocol and examples.
+See [`cuda.md`](cuda.md) for the full protocol and examples.
 
 ## Practical Profiling
 

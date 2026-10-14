@@ -9,10 +9,12 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
 ## Repo Surface
 
 - `Readme.md` is the human-facing project overview.
-- `docs/agentic-getting-started.md` is the main entrypoint for agentic use in this repo.
-- `docs/cuda-agent-guide.md` and `docs/opencl-agent-guide.md` are the optimization rulebooks.
-- `docs/opencl-3.1-migration-plan.md` and
-  `docs/lora-linear-implementation-plan.md` track planned work; they are not
+- `docs/README.md` is the documentation index; `docs/` describes how the repo
+  works now (setup, guides, optimization, complexity, references).
+- `docs/optimization/cuda.md` and `docs/optimization/opencl.md` are the
+  optimization rulebooks.
+- `specs/` holds dated feature packages (`requirements.md`, `plan.md`,
+  `validation.md`) for planned or in-flight changes; plans there are not
   implemented kernel claims.
 - This file is the single source of truth for agent rules and agent roles (see
   "Agent Rules" and "Agent Roles" below). There are no per-tool agent trees.
@@ -161,15 +163,37 @@ ATOL/RTOL over sizes 1, a non-multiple of the block size, and >= 1e6, and ends w
 6. For a new kernel, update `Readme.md` before presenting the work as complete.
 7. If the task changes the workflow or conventions, update the matching docs.
 
+## Working Sessions
+
+First session in this repo:
+
+1. Read `Readme.md` for layout and build options.
+2. Read this file; pick the backend rulebook that matches the task.
+3. Build the repo for the backend you plan to touch.
+4. Run the target kernel before editing it.
+
+Session pattern:
+
+1. Start from one concrete task: optimize one kernel, add one kernel, fix one
+   backend bug, or improve one doc cluster.
+2. Read the target `source/<kernel>/` directory and inspect `main.cpp` before
+   changing implementation files.
+3. Make one attributable change at a time, then re-run the relevant build and
+   executable.
+4. Record whether the outcome is correctness-only, performance-only, or both.
+
+Tool notes: every tool reads this file as the repo contract (OpenCode via
+`opencode.json`; Claude Code and Codex read it from the repo root). Do not
+invent per-tool agent trees or duplicate these rules in tool-specific files —
+update this file instead.
+
 ## Which Guide To Read
 
-- Starting an agentic session in this repo: `docs/agentic-getting-started.md`
-- Working from Claude Code: `docs/claude-code-guide.md`
-- Working from Codex: `docs/codex-guide.md`
-- CUDA optimization tasks: `docs/cuda-agent-guide.md`
-- OpenCL optimization tasks: `docs/opencl-agent-guide.md`
-- OpenCL 3.1 migration work: `docs/opencl-3.1-migration-plan.md`
-- Planned LoRA linear work: `docs/lora-linear-implementation-plan.md`
+Start from the documentation index in [`docs/README.md`](docs/README.md); it groups
+every guide by purpose (setup, guides, optimization, complexity, references). The
+CUDA and OpenCL rulebooks are [`docs/optimization/cuda.md`](docs/optimization/cuda.md)
+and [`docs/optimization/opencl.md`](docs/optimization/opencl.md). Planned work lives
+under [`specs/`](specs/); read the relevant dated package before starting it.
 
 ## GPU MODE Competitions
 

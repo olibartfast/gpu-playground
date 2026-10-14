@@ -1,5 +1,7 @@
 # Building gpu-playground on Google Colab
 
+> Audience: humans · Applies to: CUDA · Last reviewed: 2026-10
+
 ## Prerequisites
 
 Before building, make sure you have a **GPU runtime** enabled:
