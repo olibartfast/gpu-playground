@@ -1,5 +1,7 @@
 # Sigmoid Activation — Complexity Analysis (Phase 1, T3)
 
+> Audience: humans, agents · Applies to: CUDA, OpenCL · Last reviewed: 2026-10
+
 Attempt ID: `P1-T3-sigmoid`, base revision `77038c4`. This document derives
 asymptotic work, depth, and traffic bounds for the sigmoid kernel from source
 only. No measurements are claimed.

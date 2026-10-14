@@ -82,8 +82,8 @@ tolerance. Report unavailable instrumentation or hardware explicitly.
 Plot runtime versus size and suitable normalized costs; identify overhead,
 bandwidth, compute, and resource-limit regimes without claiming plots prove Big-O.
 
-**T-7 (R-5):** link studies from Readme; update `docs/adding-a-new-kernel.md`
-and the agentic entrypoint so future kernels maintain coverage. Preserve the
+**T-7 (R-5):** link studies from Readme; update `docs/guides/adding-a-new-kernel.md`
+and `AGENTS.md` so future kernels maintain coverage. Preserve the
 user's existing Readme edits. Mark roadmap completion only against evidence.
 
 Gate: V-1–V-6, with measured and source-only coverage distinguished.

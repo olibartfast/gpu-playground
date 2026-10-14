@@ -1,0 +1,7 @@
+# Lychee link-checker configuration for repository markdown.
+# CI runs: lychee --config lychee.toml './**/*.md'
+
+max_concurrency = 8
+max_retries = 2
+retry_wait_time = 2
+no_progress = true

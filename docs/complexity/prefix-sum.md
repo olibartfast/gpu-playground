@@ -1,5 +1,7 @@
 # Prefix Sum (Inclusive Scan) — Complexity Study (Phase 1, P1-T3-prefix)
 
+> Audience: humans, agents · Applies to: CUDA, OpenCL · Last reviewed: 2026-10
+
 Status: source-derived documentation only. No builds, no timing, no executed
 failure reproduction were performed in this packet.
 

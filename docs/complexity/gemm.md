@@ -1,5 +1,7 @@
 # Kernel Complexity Analysis: GEMM
 
+> Audience: humans, agents · Applies to: CUDA, OpenCL · Last reviewed: 2026-10
+
 Phase 1, attempt P1-T3-gemm. Source-derived analysis only — no measurements were
 taken or fabricated for this doc; every claim below is traceable to code.
 
