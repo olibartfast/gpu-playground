@@ -5,7 +5,7 @@ Branch: `feat/gaussian-blur` (commit 17deb2d adds the kernel). This packet was
 written after that commit. It governs the changes needed before merging to `master`.
 
 Constraints: [mission](../mission.md), [technical boundaries](../tech-stack.md),
-[repository contract](../../AGENTS.md), [new-kernel checklist](../../docs/adding-a-new-kernel.md#checklist).
+[repository contract](../../AGENTS.md), [new-kernel checklist](../../docs/guides/adding-a-new-kernel.md#checklist).
 
 ## Findings (2026-10-01, branch vs. the other 18 harnesses)
 
