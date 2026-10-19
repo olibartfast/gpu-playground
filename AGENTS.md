@@ -76,6 +76,13 @@ Run one kernel:
 ./build/default/source/gemm/gemm
 ```
 
+Run the CTest regression suite (CUDA targets and Python DSL backends):
+
+```bash
+ctest --preset default
+ctest --test-dir build/opencl --output-on-failure
+```
+
 Profile a CUDA binary:
 
 ```bash
@@ -92,8 +99,11 @@ python source/vector_addition/python/triton/vector_addition.py --performance
 
 ## Testing And Benchmarking
 
-Each kernel binary is its own test harness; there is no separate unit-test framework. A harness
-validates GPU output against a CPU reference within a stated tolerance (~1e-4f) and reports timings.
+Each kernel binary is its own test harness. `gpu_add_kernel()` registers self-contained C++
+targets with CTest, so `ctest --preset <preset>` is the regression suite; a harness validates GPU
+output against a CPU reference within a stated tolerance (~1e-4f) and reports timings. Targets that
+need user-supplied input (for example `deep_learning_inference`) use `NO_TEST`. Python DSL tests use
+exit code `77` for SKIPPED.
 
 Time with `benchmark()` / `benchmarkWithReset()` from `source/utils/benchmark.h` (backend-agnostic,
 pulls in no CUDA or OpenCL headers). A single timed call mostly measures one-off costs — CUDA context

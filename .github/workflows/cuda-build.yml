@@ -1,0 +1,43 @@
+name: CUDA Build
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-cuda:
+    runs-on: ubuntu-latest
+    container:
+      image: nvidia/cuda:13.0.0-devel-ubuntu24.04
+      options: --user root
+    timeout-minutes: 30
+
+    steps:
+      # The CUDA image is minimal and does not include git, which checkout needs.
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            cmake \
+            ninja-build \
+            g++ \
+            git
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure CUDA
+        run: >
+          cmake
+          -S .
+          -B build/cuda
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_CUDA_ARCHITECTURES=75
+
+      - name: Build CUDA targets
+        run: cmake --build build/cuda --parallel

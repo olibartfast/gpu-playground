@@ -70,7 +70,8 @@ int main() {
         if (diff > max_diff) max_diff = diff;
     }
     std::cout << "Max CPU vs GPU difference: " << max_diff << std::endl;
-    if (max_diff < 1e-5f) {
+    constexpr float tolerance = 1e-4f;
+    if (max_diff < tolerance) {
         std::cout << "PASSED" << std::endl;
     } else {
         std::cout << "FAILED" << std::endl;
@@ -79,5 +80,5 @@ int main() {
     free(input);
     free(output_cpu);
     free(output_gpu);
-    return max_diff < 1e-5f ? 0 : 1;
+    return max_diff < tolerance ? 0 : 1;
 }

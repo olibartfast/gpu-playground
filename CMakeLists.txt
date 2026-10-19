@@ -8,121 +8,102 @@ if(USE_OPENCL OR USE_OPENCL_CPP)
         VERSION 0.1.0
         DESCRIPTION "A playground for GPU programming"
         LANGUAGES CXX)
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
     find_package(OpenCL REQUIRED)
 else()
+    # Default to Turing SM 7.5 (Tesla T4). CUDA 13.x no longer supports
+    # offline compilation for architectures older than SM 7.5. Set this before
+    # project() so CUDA compiler detection does not fill in an older default.
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 75 CACHE STRING "CUDA architectures to build for")
+    endif()
+
     project(gpu_playground
         VERSION 0.1.0
         DESCRIPTION "A playground for GPU programming"
         LANGUAGES CXX CUDA)
 
-    # Global settings for all CUDA targets
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CUDA_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-    # Default to Tesla T4 architecture if not specified
-    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 70)
-    endif()
-
     # CUDA Architecture Best Practices:
     # - CMake 3.23+: Just don't set it at all, or use "native"
     # - CMake 3.18-3.22: Use "native" or specify a list
-    # - For CI/distribution: Set explicit list like 70-real;75-real;80-real;86 to avoid PTX overhead
+    # - For CI/distribution: Set explicit list like 75-real;80-real;86 to avoid PTX overhead
     # - Command line override: cmake -DCMAKE_CUDA_ARCHITECTURES="80;86" ..
     # - The -real suffix compiles actual binary code (SASS) instead of intermediate PTX,
     #   which is faster at runtime but produces larger binaries.
     # See: https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
-
-    # Enable separable compilation globally for CUDA
-    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+endif()
+
+# Benchmark numbers from an unoptimized build are misleading; default manual
+# builds to an optimized build with debug info.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
+endif()
+
+include(CTest)
+include(cmake/GpuKernel.cmake)
 
 # Shared utility library
 add_subdirectory(source/utils)
 
-# Per-kernel feature flags
-option(GPU_ENABLE_REVERSE_ARRAY       "Build reverse_array kernel"       ON)
-option(GPU_ENABLE_MATRIX_TRANSPOSE    "Build matrix_transpose kernel"    ON)
-option(GPU_ENABLE_SOFTMAX             "Build softmax kernel"             ON)
-option(GPU_ENABLE_PREFIX_SUM          "Build prefix_sum kernel"          ON)
-option(GPU_ENABLE_GEGLU               "Build geglu kernel"               ON)
-option(GPU_ENABLE_GELU                "Build gelu kernel"                ON)
-option(GPU_ENABLE_SILU                "Build silu kernel"                ON)
-option(GPU_ENABLE_SWIGLU              "Build swiglu kernel"              ON)
-option(GPU_ENABLE_GEMM                "Build gemm kernel"                ON)
-option(GPU_ENABLE_INTERLEAVE_ARRAYS   "Build interleave_arrays kernel"   ON)
-option(GPU_ENABLE_MATRIX_MUL          "Build matrix_mul kernel"          ON)
-option(GPU_ENABLE_SPMV                "Build spmv kernel"                ON)
-option(GPU_ENABLE_VALUE_CLIPPING      "Build value_clipping kernel"      ON)
-option(GPU_ENABLE_SIGMOID             "Build sigmoid kernel"             ON)
-option(GPU_ENABLE_RGB_TO_GRAYSCALE    "Build rgb_to_grayscale kernel"    ON)
-option(GPU_ENABLE_CONVOLUTION2D             "Build convolution2d kernel"             ON)
-option(GPU_ENABLE_DEEP_LEARNING_INFERENCE   "Build deep_learning_inference kernel"   ON)
-option(GPU_ENABLE_FP16_DOT_PRODUCT          "Build fp16_dot_product kernel"          ON)
-option(GPU_ENABLE_CATEGORICAL_CROSS_ENTROPY "Build categorical_cross_entropy kernel" ON)
-option(GPU_ENABLE_GAUSSIAN_BLUR             "Build gaussian_blur kernel"             ON)
+# Per-kernel feature flags and targets
+set(GPU_KERNELS
+    reverse_array
+    matrix_transpose
+    softmax
+    prefix_sum
+    geglu
+    gelu
+    silu
+    swiglu
+    gemm
+    interleave_arrays
+    matrix_mul
+    spmv
+    value_clipping
+    sigmoid
+    rgb_to_grayscale
+    convolution2d
+    deep_learning_inference
+    fp16_dot_product
+    categorical_cross_entropy
+    gaussian_blur
+)
 
-if(GPU_ENABLE_REVERSE_ARRAY)
-    add_subdirectory(source/reverse_array)
-endif()
-if(GPU_ENABLE_MATRIX_TRANSPOSE)
-    add_subdirectory(source/matrix_transpose)
-endif()
-if(GPU_ENABLE_SOFTMAX)
-    add_subdirectory(source/softmax)
-endif()
-if(GPU_ENABLE_PREFIX_SUM)
-    add_subdirectory(source/prefix_sum)
-endif()
-if(GPU_ENABLE_GEGLU)
-    add_subdirectory(source/geglu)
-endif()
-if(GPU_ENABLE_GELU)
-    add_subdirectory(source/gelu)
-endif()
-if(GPU_ENABLE_SILU)
-    add_subdirectory(source/silu)
-endif()
-if(GPU_ENABLE_SWIGLU)
-    add_subdirectory(source/swiglu)
-endif()
-if(GPU_ENABLE_GEMM)
-    add_subdirectory(source/gemm)
-endif()
-if(GPU_ENABLE_INTERLEAVE_ARRAYS)
-    add_subdirectory(source/interleave_arrays)
-endif()
-if(GPU_ENABLE_MATRIX_MUL)
-    add_subdirectory(source/matrix_mul)
-endif()
-if(GPU_ENABLE_SPMV)
-    add_subdirectory(source/spmv)
-endif()
-if(GPU_ENABLE_VALUE_CLIPPING)
-    add_subdirectory(source/value_clipping)
-endif()
-if(GPU_ENABLE_SIGMOID)
-    add_subdirectory(source/sigmoid)
-endif()
-if(GPU_ENABLE_RGB_TO_GRAYSCALE)
-    add_subdirectory(source/rgb_to_grayscale)
-endif()
-if(GPU_ENABLE_CONVOLUTION2D)
-    add_subdirectory(source/convolution2d)
-endif()
-if(GPU_ENABLE_DEEP_LEARNING_INFERENCE)
-    add_subdirectory(source/deep_learning_inference)
-endif()
-if(GPU_ENABLE_FP16_DOT_PRODUCT AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
-    add_subdirectory(source/fp16_dot_product)
-endif()
-if(GPU_ENABLE_CATEGORICAL_CROSS_ENTROPY AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
-    add_subdirectory(source/categorical_cross_entropy)
-endif()
-if(GPU_ENABLE_GAUSSIAN_BLUR AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
-    add_subdirectory(source/gaussian_blur)
+foreach(kernel IN LISTS GPU_KERNELS)
+    string(TOUPPER "${kernel}" kernel_option)
+    option(GPU_ENABLE_${kernel_option} "Build ${kernel} kernel" ON)
+    if(GPU_ENABLE_${kernel_option})
+        add_subdirectory(source/${kernel})
+    endif()
+endforeach()
+
+# Python DSL backends are standalone CUDA scripts. They skip (exit 77) when an
+# optional dependency is missing, which CTest records as SKIP.
+if(BUILD_TESTING AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        function(gpu_add_python_test NAME SCRIPT)
+            add_test(NAME ${NAME}
+                COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/${SCRIPT}")
+            set_tests_properties(${NAME} PROPERTIES
+                WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                SKIP_RETURN_CODE 77
+                LABELS "python;CUDA"
+                TIMEOUT 600
+            )
+        endfunction()
+
+        gpu_add_python_test(sigmoid_triton
+            source/sigmoid/python/triton/sigmoid.py)
+        gpu_add_python_test(vector_addition_triton
+            source/vector_addition/python/triton/vector_addition.py)
+        gpu_add_python_test(vector_addition_cute_dsl
+            source/vector_addition/python/cute-dsl/vector_addition.py)
+    endif()
 endif()

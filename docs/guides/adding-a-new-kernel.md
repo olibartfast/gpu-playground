@@ -300,40 +300,47 @@ Three timing paths are available:
 
 ## Step 2 — Add `CMakeLists.txt`
 
+The shared helper derives the backend source path from the kernel name and
+registers the target with CTest:
+
 ```cmake
-if(USE_OPENCL_CPP)
-    add_executable(my_kernel main.cpp opencl_cpp/my_kernel.cpp)
-    target_link_libraries(my_kernel PRIVATE opencl_cpp_helpers)
-    target_compile_definitions(my_kernel PRIVATE GPU_OPENCL_CPP_BACKEND)
-elseif(USE_OPENCL)
-    add_executable(my_kernel main.cpp opencl/my_kernel.cpp)
-    target_link_libraries(my_kernel PRIVATE opencl_helpers)
-    target_compile_definitions(my_kernel PRIVATE GPU_OPENCL_BACKEND)
-else()
-    set_source_files_properties(cuda/my_kernel.cpp main.cpp PROPERTIES LANGUAGE CUDA)
-    add_executable(my_kernel main.cpp cuda/my_kernel.cpp)
-    target_link_libraries(my_kernel PRIVATE cuda_helpers)
-endif()
+gpu_add_kernel(my_kernel)
 ```
+
+This replaces the three-way `if(USE_OPENCL_CPP)` block. It selects the requested
+backend, links the matching helper library, defines `GPU_OPENCL_BACKEND` /
+`GPU_OPENCL_CPP_BACKEND` when needed, and skips the target with a status message
+if that backend is not implemented.
 
 Source files keep the `.cpp` extension; CUDA files are compiled as CUDA through
 `set_source_files_properties`.
+
+If the source files use a shorter name than the directory, pass it explicitly:
+
+```cmake
+gpu_add_kernel(interleave_arrays SOURCE_NAME interleave)
+```
+
+Additional backend sources, definitions, and compile options can be supplied
+with `EXTRA_SOURCES`, `COMPILE_DEFINITIONS`, and `COMPILE_OPTIONS`. Use
+`NO_TEST` for a harness that needs arguments or user-supplied input.
 
 ---
 
 ## Step 3 — Register in the Root `CMakeLists.txt`
 
-Add an option and a subdirectory call alongside the existing kernels:
+Add the kernel name to `GPU_KERNELS` in the root `CMakeLists.txt`:
 
 ```cmake
-option(GPU_ENABLE_MY_KERNEL "Build my_kernel kernel" ON)
-
-if(GPU_ENABLE_MY_KERNEL)
-    add_subdirectory(source/my_kernel)
-endif()
+set(GPU_KERNELS
+    ...
+    my_kernel
+)
 ```
 
-The `GPU_ENABLE_<NAME>` flag lets users disable a kernel at configure time:
+The loop creates the `GPU_ENABLE_MY_KERNEL` option automatically and adds the
+subdirectory when it is enabled. The flag lets users disable a kernel at
+configure time:
 
 ```bash
 cmake -DGPU_ENABLE_MY_KERNEL=OFF ..
@@ -358,7 +365,7 @@ accurate.
 ## Step 5 — Build and Run
 
 ```bash
-# CUDA build (default: SM 7.0)
+# CUDA build (default: SM 7.5, RelWithDebInfo)
 cmake --preset default
 cmake --build --preset default -j$(nproc)
 
@@ -367,6 +374,9 @@ cmake --build --preset default --target my_kernel
 
 # Run
 ./build/default/source/my_kernel/my_kernel
+
+# Run the registered regression test
+ctest --preset default -R '^my_kernel$' --output-on-failure
 
 # Profile
 ./cuda_perf_analysis.sh ./build/default/source/my_kernel/my_kernel
@@ -420,9 +430,10 @@ Benchmarking" in [AGENTS.md](../../AGENTS.md) for the full contract.
 - [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` (or
       `benchmarkDevice()` / `benchmarkDeviceWithReset()` for kernel-only time)
       in `source/utils/benchmark.h`, never a bare `steady_clock` pair
-- [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()`
-      block; correct `set_source_files_properties` for the CUDA path
-- [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` and `add_subdirectory`
+- [ ] `CMakeLists.txt` — `gpu_add_kernel(<name>)`, with `SOURCE_NAME` /
+      `BACKENDS` / `EXTRA_SOURCES` only when the defaults do not fit
+- [ ] Root `CMakeLists.txt` — kernel name added to `GPU_KERNELS`
+- [ ] CTest — `ctest --preset default -R '^<name>$'` passes
 - [ ] Root `Readme.md` — kernel inventory, backend coverage, and required
       build/run instructions
 - [ ] Thread block size is a multiple of 32

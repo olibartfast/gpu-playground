@@ -27,7 +27,8 @@ For details, see [.devcontainer/README.md](.devcontainer/README.md).
 
 ## Prerequisites
 
-- CUDA Toolkit 11.4 or newer for CUDA builds
+- CUDA Toolkit 11.4 or newer for CUDA builds. CUDA 13.x requires a target
+  architecture of SM 7.5 or newer (for example, Tesla T4 or later).
 - CMake 3.20 or newer
 - A C++17 compiler, such as GCC 9 or newer
 - A CUDA-capable GPU with matching drivers
@@ -53,7 +54,7 @@ and the OpenCL C++ wrapper (`USE_OPENCL_CPP`). All are driven by CMake.
 ### CUDA presets (recommended)
 
 ```bash
-# Default: Tesla T4 / Compute Capability 7.0
+# Default: Tesla T4 / Compute Capability 7.5, RelWithDebInfo
 cmake --preset default
 cmake --build --preset default -j$(nproc)
 
@@ -68,9 +69,15 @@ cmake --build --preset ampere -j$(nproc)
 # Optimized release build
 cmake --preset release
 cmake --build --preset release -j$(nproc)
+
+# Unoptimized native build for debugging
+cmake --preset debug
+cmake --build --preset debug -j$(nproc)
 ```
 
-The available presets are defined in `CMakePresets.json`.
+The available presets are defined in `CMakePresets.json`. Benchmark builds use
+`RelWithDebInfo` or `Release`; Debug builds disable device optimization and are
+not representative for performance work.
 
 ### OpenCL backends
 
@@ -99,18 +106,21 @@ cmake ..
 cmake --build . -j$(nproc)
 ```
 
-This builds for **Tesla T4 (Compute Capability 7.0)** by default. To target a
-different architecture, pass it explicitly — for example, an RTX 3080 on Ampere:
+This builds for **Tesla T4 (Compute Capability 7.5)** in `RelWithDebInfo` by
+default. To target a different architecture, pass it explicitly — for example,
+an RTX 3080 on Ampere:
 
 ```bash
 cmake -DCMAKE_CUDA_ARCHITECTURES=86 ..
 cmake --build . -j$(nproc)
 ```
 
+Use `-DCMAKE_BUILD_TYPE=Debug` only when you need device-debug information.
+
 ### Building selected kernels
 
-Every kernel has a `GPU_ENABLE_<KERNEL>` option, `ON` by default. Build one
-target directly:
+Every C++ kernel in the root `GPU_KERNELS` list has a `GPU_ENABLE_<KERNEL>`
+option, `ON` by default. Build one target directly:
 
 ```bash
 cmake --build . --target gemm
@@ -167,6 +177,25 @@ end-to-end throughput. Host-side timing uses `benchmark()` and
 converters for GFLOP/s, GB/s, million items/s, and speedup operate on a result's
 `median_ms` and live in `source/utils/benchmark_helpers.h`.
 
+### Testing
+
+Every C++ kernel target with a self-contained harness is registered with CTest.
+A test passes when the kernel binary exits `0`; Python DSL tests report `77` when
+an optional dependency is missing and CTest records that as skipped.
+`deep_learning_inference` needs a user-supplied image, so it is run manually.
+
+```bash
+# Run the default CUDA build's tests
+ctest --preset default
+
+# Run tests for another preset
+ctest --preset release
+
+# OpenCL builds use the build directory directly
+ctest --test-dir build/opencl --output-on-failure
+ctest --test-dir build/opencl_cpp --output-on-failure
+```
+
 ## Project Structure
 
 ```
@@ -185,8 +214,9 @@ gpu_playground/
 │   │   ├── opencl/            ← OpenCL C API implementation
 │   │   └── opencl_cpp/        ← OpenCL C++ wrapper implementation
 │   └── ...                    ← additional kernels; backend coverage is listed below
-├── CMakeLists.txt             ← root build file; USE_OPENCL / USE_OPENCL_CPP + GPU_ENABLE_* flags
-├── CMakePresets.json          ← build presets (default, native, ampere, release)
+├── cmake/GpuKernel.cmake      ← gpu_add_kernel(): backend selection + CTest registration
+├── CMakeLists.txt             ← root build file; kernel list + USE_OPENCL / USE_OPENCL_CPP
+├── CMakePresets.json          ← configure/build/test presets (default, native, ampere, release, debug)
 ├── cuda_perf_analysis.sh      ← performance profiling script
 ├── docs/                      ← documentation index (docs/README.md) and guides
 ├── specs/                     ← dated feature packages for planned changes
@@ -210,6 +240,7 @@ the coverage actually built today.
 | `softmax` | Numerically stable softmax using a multi-stage reduction | CUDA, OpenCL, OpenCL C++ |
 | `prefix_sum` | Parallel inclusive prefix scan (Hillis–Steele) | CUDA, OpenCL, OpenCL C++ |
 | `geglu` | Gated linear unit with GELU activation, as used in Transformer FFNs | CUDA, OpenCL, OpenCL C++ |
+| `gelu` | GELU activation (`0.5·x·(1 + erf(x/√2))`) | CUDA |
 | `silu` | SiLU / Swish activation (`x·σ(x)`) | CUDA, OpenCL, OpenCL C++ |
 | `swiglu` | SwiGLU gated activation | CUDA, OpenCL, OpenCL C++ |
 | `matrix_mul` | Basic tiled matrix multiplication | CUDA, OpenCL, OpenCL C++ |

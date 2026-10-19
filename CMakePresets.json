@@ -3,13 +3,13 @@
   "configurePresets": [
     {
       "name": "default",
-      "displayName": "Default (Tesla T4 / SM70)",
-      "description": "Build for Tesla T4 GPU (Compute Capability 7.0)",
+      "displayName": "Default (Tesla T4 / SM75)",
+      "description": "Build for Tesla T4 GPU (Compute Capability 7.5) with optimization and debug info",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/default",
       "cacheVariables": {
-        "CMAKE_CUDA_ARCHITECTURES": "70",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_CUDA_ARCHITECTURES": "75",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     },
     {
@@ -20,7 +20,7 @@
       "binaryDir": "${sourceDir}/build/native",
       "cacheVariables": {
         "CMAKE_CUDA_ARCHITECTURES": "native",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     },
     {
@@ -31,7 +31,7 @@
       "binaryDir": "${sourceDir}/build/ampere",
       "cacheVariables": {
         "CMAKE_CUDA_ARCHITECTURES": "86",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     },
     {
@@ -43,6 +43,17 @@
       "cacheVariables": {
         "CMAKE_CUDA_ARCHITECTURES": "native",
         "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug (native)",
+      "description": "Unoptimized native build for debugging and device-side tools",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "native",
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     }
   ],
@@ -62,6 +73,47 @@
     {
       "name": "release",
       "configurePreset": "release"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "native",
+      "configurePreset": "native",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ampere",
+      "configurePreset": "ampere",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

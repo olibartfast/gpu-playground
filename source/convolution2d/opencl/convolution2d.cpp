@@ -3,7 +3,7 @@
 
 static const char* KERNEL_SOURCE = R"(
 __kernel void convolution2d_kernel(__global const float* input,
-                                   __global const float* kernel,
+                                   __global const float* filter,
                                    __global float* output,
                                    int input_rows, int input_cols,
                                    int kernel_rows, int kernel_cols,
@@ -15,7 +15,7 @@ __kernel void convolution2d_kernel(__global const float* input,
         for (int kr = 0; kr < kernel_rows; kr++) {
             for (int kc = 0; kc < kernel_cols; kc++) {
                 sum += input[(out_row + kr) * input_cols + (out_col + kc)]
-                     * kernel[kr * kernel_cols + kc];
+                     * filter[kr * kernel_cols + kc];
             }
         }
         output[out_row * out_cols + out_col] = sum;
@@ -24,7 +24,7 @@ __kernel void convolution2d_kernel(__global const float* input,
 
 // Fused: kernel weights loaded into local memory cooperatively
 __kernel void convolution2d_fused(__global const float* input,
-                                  __global const float* kernel,
+                                  __global const float* filter,
                                   __global float* output,
                                   int input_rows, int input_cols,
                                   int kernel_rows, int kernel_cols,
@@ -35,7 +35,7 @@ __kernel void convolution2d_fused(__global const float* input,
     int kernel_elems = kernel_rows * kernel_cols;
 
     for (int i = lid; i < kernel_elems; i += block_threads)
-        s_kernel[i] = kernel[i];
+        s_kernel[i] = filter[i];
     barrier(CLK_LOCAL_MEM_FENCE);
 
     int out_col = get_global_id(0);
