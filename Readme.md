@@ -132,8 +132,10 @@ cmake -DGPU_ENABLE_GEMM=OFF ..
 
 ### Building on Google Colab
 
-The C++/CUDA kernels also build on a free Colab GPU runtime. See
-[Building on Google Colab](docs/setup/google-colab.md) for the full walkthrough.
+The C++/CUDA kernels also build on a free Colab GPU runtime, from a notebook or
+from a terminal with the Colab CLI. See
+[Building on Google Colab](docs/setup/google-colab.md) for the full walkthrough,
+including CLI installation.
 
 ## Running Kernels
 
