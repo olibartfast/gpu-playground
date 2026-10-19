@@ -13,7 +13,8 @@ New to the repository? Start with the [project README](../Readme.md), then
 ## Setup
 
 - [Building on Google Colab](setup/google-colab.md) — build and run the
-  C++/CUDA kernels on a free Colab GPU.
+  C++/CUDA kernels on a free Colab GPU, or drive a runtime from the terminal
+  with the optional Colab CLI.
 - [External frameworks](setup/external-frameworks.md) — install CUTLASS, Mojo,
   Triton, and TinyGrad for comparison work.
 

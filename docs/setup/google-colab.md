@@ -6,6 +6,49 @@ Google Colab's free GPU runtime can build and run this repository's CUDA
 kernels. Select a GPU runtime, clone the repository, configure CMake for that
 GPU's compute capability, build, and run a binary.
 
+The notebook workflow below needs no local setup. If you prefer a terminal, the
+[Colab CLI](https://github.com/googlecolab/google-colab-cli) provisions and
+controls the same runtimes over SSH.
+
+## Install the Colab CLI (Optional)
+
+The Colab CLI supports Linux and macOS; Windows is not supported. Install it
+with `uv` (recommended upstream) or `pip`:
+
+```bash
+uv tool install google-colab-cli
+# or
+pip install google-colab-cli
+```
+
+Confirm the install, provision a GPU runtime, and open a remote shell:
+
+```bash
+colab version
+colab new -s gpu-playground --gpu T4
+colab ssh -s gpu-playground
+```
+
+Inside the remote shell, clone and build without the notebook `!`/`%` prefixes:
+
+```bash
+git clone https://github.com/olibartfast/gpu-playground.git
+cmake -S gpu-playground -B gpu-playground/build -DCMAKE_CUDA_ARCHITECTURES=75
+cmake --build gpu-playground/build -j"$(nproc)"
+./gpu-playground/build/source/softmax/softmax
+```
+
+Exit the remote shell and release the runtime when finished:
+
+```bash
+exit
+colab stop -s gpu-playground
+```
+
+`colab sessions` lists active runtimes, and `colab run --gpu T4 script.py`
+provisions a VM for a one-off Python script and tears it down automatically.
+Runtime availability and quotas follow your Colab account.
+
 ## Choose a GPU Runtime
 
 1. Open **Runtime → Change runtime type**.
