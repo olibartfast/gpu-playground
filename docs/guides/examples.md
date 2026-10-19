@@ -2,13 +2,15 @@
 
 > Audience: humans · Applies to: all · Last reviewed: 2026-10
 
-This document contains practical examples of GPU programming using different languages and frameworks.
-For building this repository's C++/CUDA kernels on Google Colab, see the
+These examples show the same GPU workload — usually matrix multiplication —
+expressed in PyTorch, TinyGrad, Triton, and Mojo. They are standalone
+illustrations for comparison and experimentation, not part of the repository's
+C++ harnesses. For building the C++/CUDA kernels on Colab, see the
 [Google Colab setup guide](../setup/google-colab.md).
 
-## Example 1: GPU Testing with Python (PyTorch)
+## PyTorch
 
-Simple GPU-accelerated tensor operation using PyTorch:
+A minimal GPU-accelerated tensor operation:
 
 ```python
 import torch
@@ -27,7 +29,7 @@ result = torch.matmul(tensor, tensor)
 print("Result on GPU:", result)
 ```
 
-### Profiling CUDA Kernels in Python
+### Profiling CUDA kernels from Python
 
 ```python
 import torch
@@ -39,9 +41,9 @@ with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
 print(prof.key_averages().table(sort_by="cuda_time_total"))
 ```
 
-## Example 2: TinyGrad - Lightweight GPU Acceleration
+## TinyGrad
 
-TinyGrad is a minimalist neural network library for GPU acceleration.
+TinyGrad is a minimalist neural network library with its own GPU runtime.
 
 ```python
 from tinygrad.tensor import Tensor
@@ -63,7 +65,7 @@ out = x.matmul(W).add(b)
 print(out.shape)
 ```
 
-### TinyGrad with CUDA Performance Testing
+### Timing a TinyGrad matrix multiplication
 
 ```python
 import time
@@ -90,9 +92,10 @@ print(f"FLOPS: {2 * size**3 / (end_time - start_time):.2e}")
 print(GlobalCounters.print_hot())
 ```
 
-## Example 3: OpenAI Triton - Accessible GPU Programming
+## Triton
 
-Triton simplifies GPU kernel programming for AI tasks.
+Triton exposes a tile-based programming model for GPU kernels. This example
+implements a blocked matrix multiplication with boundary masks.
 
 ```python
 import torch
@@ -148,7 +151,7 @@ def matmul(a, b):
     return c
 ```
 
-### Test Kernel
+### Checking the Triton result
 
 ```python
 a = torch.randn((1024, 1024), device='cuda', dtype=torch.float32)
@@ -158,7 +161,7 @@ c_triton = matmul(a, b)
 print(f"Max difference: {(c_torch - c_triton).abs().max().item()}")
 ```
 
-### Benchmarking Triton vs PyTorch
+### Benchmarking Triton against PyTorch
 
 ```python
 import time
@@ -170,12 +173,12 @@ triton_times = []
 for size in sizes:
     a = torch.randn((size, size), device='cuda', dtype=torch.float32)
     b = torch.randn((size, size), device='cuda', dtype=torch.float32)
-    
+
     # Warmup
     torch.matmul(a, b)
     matmul(a, b)
     torch.cuda.synchronize()
-    
+
     # Benchmark PyTorch
     start = time.time()
     for _ in range(10):
@@ -183,7 +186,7 @@ for size in sizes:
     torch.cuda.synchronize()
     torch_time = (time.time() - start) / 10
     torch_times.append(torch_time)
-    
+
     # Benchmark Triton
     start = time.time()
     for _ in range(10):
@@ -191,7 +194,7 @@ for size in sizes:
     torch.cuda.synchronize()
     triton_time = (time.time() - start) / 10
     triton_times.append(triton_time)
-    
+
     print(f"Size: {size}x{size}")
     print(f"PyTorch: {torch_time*1000:.2f} ms")
     print(f"Triton: {triton_time*1000:.2f} ms")
@@ -199,9 +202,12 @@ for size in sizes:
     print("-" * 30)
 ```
 
-## Example 4: GPU Testing with Mojo (Conceptual)
+## Mojo (Conceptual)
 
-> **Note:** This is a conceptual example showing potential Mojo GPU programming patterns. Mojo's GPU support is evolving, so syntax may differ from the current SDK. Mojo requires a local environment with the Mojo SDK installed. Unlike the C++/CUDA code in this repo, Mojo code cannot currently run on Google Colab.
+> **Note:** This is a conceptual example of Mojo's GPU programming patterns, not
+> a supported build target. Mojo's GPU support is evolving, so the syntax may
+> differ from the current SDK. It requires a local Mojo SDK installation; unlike
+> the C++/CUDA code in this repository, it cannot run on Google Colab.
 
 ```mojo
 from math import div_ceil
@@ -271,12 +277,12 @@ fn main():
     let size = 1024
     let a = Matrix.rand(size, size)
     let b = Matrix.rand(size, size)
-    
+
     let start = now()
     let c = a.matmul(b)
     let cpu_time = (now() - start) / 1e9
     print("CPU Matrix multiplication:", cpu_time, "seconds")
-    
+
     let start_gpu = now()
     let c_gpu = matmul_gpu(a, b)
     let gpu_time = (now() - start_gpu) / 1e9
@@ -284,13 +290,15 @@ fn main():
     print("Speedup:", cpu_time / gpu_time, "x")
 ```
 
-## Notes on Performance and Usage
+## Benchmarking Conventions
 
-C++ kernel harnesses time any synchronous CPU or GPU wrapper with `benchmark()` /
-`benchmarkDevice()` from `source/utils/benchmark.h`, then convert the result's `median_ms` into a
-throughput or bandwidth figure with `benchmark_helpers.h`:
+The Python snippets above use `time.time()` for brevity. Repository kernels use
+the shared timing utilities instead, so measurements include warm-up and report
+a distribution rather than a single sample:
 
 ```cpp
+#include "benchmark.h"
+
 BenchResult gpu = benchmark([&] { run_kernel(); });
 double gflops = gpu_benchmark::giga_operations_per_second(operation_count, gpu.median_ms);
 double bandwidth = gpu_benchmark::gigabytes_per_second(bytes_moved, gpu.median_ms);
@@ -307,14 +315,12 @@ double kernel_gflops = gpu_benchmark::giga_operations_per_second(operation_count
 GPU wrappers must synchronize before returning. Report kernel-only and
 end-to-end measurements separately when allocation or transfers are material.
 
-* **GPU Support**: Each framework has its own way of handling GPU acceleration. Make sure to check device availability and properly move data to GPU when needed.
-* **Performance Considerations**: 
-  - Always include warmup runs before benchmarking
-  - Use appropriate batch sizes for your GPU memory
-  - Consider memory transfer overhead in your performance measurements
-* **Error Handling**: Add proper error handling for GPU out-of-memory situations and other common GPU-related errors
-* **Optimization Tips**:
-  - Use appropriate data types (float32 vs float64)
-  - Minimize host-device data transfers
-  - Choose appropriate block and grid sizes for CUDA kernels
-  - Profile your code to identify bottlenecks
+When comparing frameworks, keep the measurement honest:
+
+- Warm up before timing, and time repeated iterations.
+- Use batch sizes that fit the available GPU memory.
+- Account for host-to-device and device-to-host transfer overhead.
+- Handle out-of-memory and other GPU errors explicitly.
+- Choose data types deliberately (`float32` versus `float64`).
+- Minimize host-device transfers.
+- Choose appropriate block and grid sizes, guided by profiling.

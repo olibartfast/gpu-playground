@@ -1,59 +1,63 @@
 # GPU Playground
 
-A collection of GPU kernel implementations in C++/CUDA and OpenCL, inspired by resources from the [GPU Mode Group](https://github.com/gpu-mode) and [LeetGPU](https://leetgpu.com).
+A collection of standalone GPU kernels written in C++/CUDA and OpenCL, built as a
+learning and benchmarking playground. Each kernel pairs a CPU reference with one
+or more GPU backends and a shared test harness, so correctness and performance
+can be compared directly. The project is inspired by resources from the
+[GPU Mode Group](https://github.com/gpu-mode) and [LeetGPU](https://leetgpu.com).
 
 ## Quick Start
 
-### Using Dev Container (Recommended)
+### Using the dev container (recommended)
 
-The easiest way to get started is using the pre-configured development container:
+The pre-configured development container is the fastest way to get a working
+CUDA toolchain:
 
-1. **Prerequisites:**
-   - Docker with NVIDIA Container Toolkit installed
-   - VS Code with Dev Containers extension
-   - NVIDIA GPU with drivers installed on host
+1. **Prerequisites**
+   - Docker with the NVIDIA Container Toolkit installed
+   - VS Code with the Dev Containers extension
+   - An NVIDIA GPU and driver installed on the host
 
-2. **Launch:**
-   - Open this repository in VS Code
-   - Click "Reopen in Container" when prompted
-   - The container will automatically set up CUDA 13.0 development environment
+2. **Launch**
+   - Open this repository in VS Code.
+   - Click "Reopen in Container" when prompted.
+   - The container sets up a CUDA 13.0 development environment automatically.
 
-For detailed devcontainer setup instructions, see [.devcontainer/README.md](.devcontainer/README.md).
+For details, see [.devcontainer/README.md](.devcontainer/README.md).
 
 ## Prerequisites
 
-- CUDA Toolkit (11.4+ for CUDA builds)
-- CMake 3.20+
-- A C++17 compatible compiler (e.g., GCC 9+)
-- A CUDA-capable GPU and appropriate drivers
-- Ninja build system (for CMake presets; `sudo apt-get install ninja-build`)
-- For OpenCL C API: `libopencl-dev` / `ocl-icd-opencl-dev`
-- For OpenCL C++ wrapper: additionally `opencl-clhpp-headers` (`sudo apt install opencl-clhpp-headers`)
+- CUDA Toolkit 11.4 or newer for CUDA builds
+- CMake 3.20 or newer
+- A C++17 compiler, such as GCC 9 or newer
+- A CUDA-capable GPU with matching drivers
+- Ninja, required by the CMake presets (`sudo apt-get install ninja-build`)
+- For the OpenCL C API: `libopencl-dev` or `ocl-icd-opencl-dev`
+- For the OpenCL C++ wrapper: additionally `opencl-clhpp-headers`
+  (`sudo apt install opencl-clhpp-headers`)
 
-## Installing Required Libraries
-
-### For C++ (ensure CUDA is set up):
+To install the CUDA toolkit on Ubuntu:
 
 ```bash
 sudo apt-get install nvidia-cuda-toolkit
 ```
 
-### For Python, Mojo, CUTLASS, and other frameworks:
+For Python, Mojo, CUTLASS, and other frameworks, see
+[docs/setup/external-frameworks.md](docs/setup/external-frameworks.md).
 
-See [docs/setup/external-frameworks.md](docs/setup/external-frameworks.md) for setup instructions.
+## Building
 
-## Building the Projects
+Three backends are supported: CUDA (the default), the OpenCL C API (`USE_OPENCL`),
+and the OpenCL C++ wrapper (`USE_OPENCL_CPP`). All are driven by CMake.
 
-This project uses CMake to manage the build process for all GPU kernels. Three backends are supported: CUDA (default), OpenCL C API (`USE_OPENCL`), and OpenCL C++ wrapper (`USE_OPENCL_CPP`).
-
-### Build using presets (CUDA, recommended):
+### CUDA presets (recommended)
 
 ```bash
 # Default: Tesla T4 / Compute Capability 7.0
 cmake --preset default
 cmake --build --preset default -j$(nproc)
 
-# Auto-detect local GPU (requires CMake 3.23+)
+# Auto-detect the local GPU (requires CMake 3.23+)
 cmake --preset native
 cmake --build --preset native -j$(nproc)
 
@@ -66,16 +70,18 @@ cmake --preset release
 cmake --build --preset release -j$(nproc)
 ```
 
-Available presets are defined in `CMakePresets.json`.
+The available presets are defined in `CMakePresets.json`.
 
-### Build with OpenCL C API backend:
+### OpenCL backends
+
+OpenCL C API:
 
 ```bash
 cmake -B build/opencl -DUSE_OPENCL=ON
 cmake --build build/opencl -j$(nproc)
 ```
 
-### Build with OpenCL C++ wrapper backend:
+OpenCL C++ wrapper:
 
 ```bash
 # Requires: sudo apt install opencl-clhpp-headers
@@ -83,9 +89,9 @@ cmake -B build/opencl_cpp -DUSE_OPENCL_CPP=ON
 cmake --build build/opencl_cpp -j$(nproc)
 ```
 
-Binaries land in `build/opencl/source/<kernel>/<kernel>` or `build/opencl_cpp/source/<kernel>/<kernel>`. The same `GPU_ENABLE_*` feature flags apply.
+Both honor the same `GPU_ENABLE_*` feature flags as the CUDA build.
 
-### Build manually (CUDA):
+### Manual CMake build
 
 ```bash
 mkdir -p build && cd build
@@ -93,37 +99,71 @@ cmake ..
 cmake --build . -j$(nproc)
 ```
 
-By default, this builds for **Tesla T4 (Compute Capability 7.0)**. To build for a different architecture (e.g., RTX 3080/Ampere = 86), use:
+This builds for **Tesla T4 (Compute Capability 7.0)** by default. To target a
+different architecture, pass it explicitly — for example, an RTX 3080 on Ampere:
 
 ```bash
 cmake -DCMAKE_CUDA_ARCHITECTURES=86 ..
 cmake --build . -j$(nproc)
 ```
 
-### Build a specific kernel:
+### Building selected kernels
+
+Every kernel has a `GPU_ENABLE_<KERNEL>` option, `ON` by default. Build one
+target directly:
 
 ```bash
 cmake --build . --target gemm
 ```
 
-### Disable a kernel at configure time:
+Or exclude kernels at configure time to shorten the build:
 
 ```bash
 cmake -DGPU_ENABLE_GEMM=OFF ..
 ```
 
-Each kernel has a corresponding `GPU_ENABLE_<KERNEL>` option flag (all `ON` by default).
+### Binary locations
 
-### Binary locations:
+- Preset builds: `build/<preset>/source/<kernel>/<kernel>`
+  (for example, `build/default/source/gemm/gemm`)
+- Manual builds: `build/source/<kernel>/<kernel>`
+- OpenCL C API: `build/opencl/source/<kernel>/<kernel>`
+- OpenCL C++ wrapper: `build/opencl_cpp/source/<kernel>/<kernel>`
 
-- With presets: `build/<preset>/source/<kernel>/<kernel>` (e.g., `build/default/source/gemm/gemm`)
-- With manual build: `build/source/<kernel>/<kernel>` (e.g., `build/source/gemm/gemm`)
-- OpenCL C API build: `build/opencl/source/<kernel>/<kernel>`
-- OpenCL C++ build: `build/opencl_cpp/source/<kernel>/<kernel>`
+### Building on Google Colab
 
-### Build on Google Colab
+The C++/CUDA kernels also build on a free Colab GPU runtime. See
+[Building on Google Colab](docs/setup/google-colab.md) for the full walkthrough.
 
-You can also build and run the C++/CUDA kernels on Google Colab using a free GPU runtime. See the [Building on Google Colab](docs/setup/google-colab.md) guide for full instructions.
+## Running Kernels
+
+Run a kernel binary directly; each one validates its output against the CPU
+reference and returns a non-zero exit code on failure.
+
+The LeetGPU-compatible FP16 dot product, categorical cross-entropy, and Gaussian
+blur kernels also provide a `--performance` mode with the challenge's benchmark
+shape:
+
+```bash
+# FP16 dot product: functional cases and a 100-million-element shape
+./build/default/source/fp16_dot_product/fp16_dot_product
+./build/default/source/fp16_dot_product/fp16_dot_product --performance
+
+# Categorical cross-entropy: functional cases and N=10,000, C=1,000
+./build/default/source/categorical_cross_entropy/categorical_cross_entropy
+./build/default/source/categorical_cross_entropy/categorical_cross_entropy --performance
+
+# Gaussian blur: functional cases and a 512x512 image with a 7x7 kernel
+./build/default/source/gaussian_blur/gaussian_blur
+./build/default/source/gaussian_blur/gaussian_blur --performance
+```
+
+Performance output separates CPU throughput, GPU kernel-only throughput, and GPU
+end-to-end throughput. Host-side timing uses `benchmark()` and
+`benchmarkWithReset()`; device-measured kernel time uses `benchmarkDevice()` and
+`benchmarkDeviceWithReset()`. Both live in `source/utils/benchmark.h`. Shared unit
+converters for GFLOP/s, GB/s, million items/s, and speedup operate on a result's
+`median_ms` and live in `source/utils/benchmark_helpers.h`.
 
 ## Project Structure
 
@@ -132,7 +172,7 @@ gpu_playground/
 ├── source/                    ← all C++/CUDA/OpenCL source code
 │   ├── utils/                 ← shared utility libraries
 │   │   ├── cuda_helpers.h         ← CUDA_CHECK macro + getTime()
-│   │   ├── benchmark.h            ← timing framework: benchmark()/benchmarkWithReset(), benchmarkDevice()/benchmarkDeviceWithReset(), summarize()
+│   │   ├── benchmark.h            ← benchmark()/benchmarkWithReset(), benchmarkDevice()/benchmarkDeviceWithReset(), summarize()
 │   │   ├── benchmark_helpers.h    ← unit converters (GFLOP/s, GB/s, items/s, speedup) over median_ms
 │   │   ├── opencl_c_helpers.h     ← C API: CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
 │   │   ├── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
@@ -152,82 +192,57 @@ gpu_playground/
 └── .devcontainer/             ← Docker-based CUDA development environment
 ```
 
-### Kernel Implementations
+The `.devcontainer/` directory defines the Docker-based CUDA environment, and
+`cuda_perf_analysis.sh` auto-detects `ncu`, `nsys`, or `nvprof` for profiling.
 
-Portable kernels under `source/` have `cuda/`, `opencl/`, and `opencl_cpp/`
-subdirectories plus a shared `main.cpp` harness. CUDA-only examples are marked
-explicitly in the table.
+### Kernel Inventory
 
-| Kernel | Description |
-|--------|-------------|
-| `gemm` | General Matrix Multiplication with advanced tiling (α·A·B + β·C) |
-| `sigmoid` | Sigmoid activation — scalar and vectorized float4 variants. Python: Triton (`source/sigmoid/python/triton/sigmoid.py`) |
-| `softmax` | Numerically stable softmax using multi-stage reduction |
-| `prefix_sum` | Parallel inclusive prefix scan (Hillis-Steele) |
-| `geglu` | Gated Linear Unit with GELU activation (Transformer FFN) |
-| `silu` | SiLU / Swish activation (x·σ(x)) |
-| `swiglu` | SwiGLU gated activation |
-| `matrix_mul` | Basic tiled matrix multiplication |
-| `matrix_transpose` | Matrix transpose using shared memory |
-| `spmv` | Sparse Matrix-Vector Multiplication (4 kernel variants) |
-| `interleave_arrays` | Array interleaving (AoS ↔ SoA patterns) |
-| `reverse_array` | In-place array reversal |
-| `value_clipping` | Element-wise value clamping |
-| `rgb_to_grayscale` | RGB to grayscale conversion (Rec.601 luminance) |
-| `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) |
-| `deep_learning_inference` | Small feed-forward CNN (RGBA→grayscale): reference vs. candidate optimization exercise. CUDA-only. Requires `python source/deep_learning_inference/generate_weights.py` before first run. Modes: `benchmark`, `image_infer <in> <out>`, `correctness <img>`. See `source/deep_learning_inference/README.md` for setup and run steps. |
-| `fp16_dot_product` | FP16 dot product using packed `__half2` loads with FP32 multiplication and accumulation, returning FP16 (CUDA-only) |
-| `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (CUDA-only, LeetGPU challenge 25) |
-| `gaussian_blur` | Naive 2D Gaussian blur / same-size convolution with zero padding, one thread per output pixel reading every tap from global memory (CUDA-only, LeetGPU challenge 28) |
-| `vector_addition` | Element-wise vector addition. Python-only: Triton and CuTe DSL (`source/vector_addition/python/triton/vector_addition.py`, `source/vector_addition/python/cute-dsl/vector_addition.py`); no CUDA/OpenCL target |
+Portable kernels under `source/` provide `cuda/`, `opencl/`, and `opencl_cpp/`
+implementations behind a shared `main.cpp` harness. The backends column records
+the coverage actually built today.
 
-Run the LeetGPU-compatible FP16 functional cases and its 100-million-element
-performance shape with:
+| Kernel | Description | Backends |
+|--------|-------------|----------|
+| `gemm` | General matrix multiplication with tiled shared memory (`α·A·B + β·C`) | CUDA, OpenCL, OpenCL C++ |
+| `sigmoid` | Sigmoid activation, scalar and vectorized `float4` variants | CUDA, OpenCL, OpenCL C++; Triton |
+| `softmax` | Numerically stable softmax using a multi-stage reduction | CUDA, OpenCL, OpenCL C++ |
+| `prefix_sum` | Parallel inclusive prefix scan (Hillis–Steele) | CUDA, OpenCL, OpenCL C++ |
+| `geglu` | Gated linear unit with GELU activation, as used in Transformer FFNs | CUDA, OpenCL, OpenCL C++ |
+| `silu` | SiLU / Swish activation (`x·σ(x)`) | CUDA, OpenCL, OpenCL C++ |
+| `swiglu` | SwiGLU gated activation | CUDA, OpenCL, OpenCL C++ |
+| `matrix_mul` | Basic tiled matrix multiplication | CUDA, OpenCL, OpenCL C++ |
+| `matrix_transpose` | Matrix transpose using shared memory | CUDA, OpenCL, OpenCL C++ |
+| `spmv` | Sparse matrix-vector multiplication, four kernel variants | CUDA, OpenCL, OpenCL C++ |
+| `interleave_arrays` | Array interleaving (AoS ↔ SoA patterns) | CUDA, OpenCL, OpenCL C++ |
+| `reverse_array` | In-place array reversal | CUDA, OpenCL, OpenCL C++ |
+| `value_clipping` | Element-wise value clamping | CUDA, OpenCL, OpenCL C++ |
+| `rgb_to_grayscale` | RGB to grayscale conversion using Rec.601 luminance | CUDA, OpenCL, OpenCL C++ |
+| `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) | CUDA, OpenCL, OpenCL C++ |
+| `deep_learning_inference` | Small feed-forward CNN (RGBA to grayscale) with reference and candidate paths for optimization exercises | CUDA |
+| `fp16_dot_product` | FP16 dot product using packed `__half2` loads, FP32 multiply-accumulate, FP16 result | CUDA |
+| `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (LeetGPU challenge 25) | CUDA |
+| `gaussian_blur` | Naive 2D Gaussian blur with zero padding; one thread per output pixel reads every tap from global memory (LeetGPU challenge 28) | CUDA |
+| `vector_addition` | Element-wise vector addition | Triton, CuTe DSL |
 
-```bash
-./build/default/source/fp16_dot_product/fp16_dot_product
-./build/default/source/fp16_dot_product/fp16_dot_product --performance
-```
+`deep_learning_inference` needs generated weights before its first run: execute
+`python source/deep_learning_inference/generate_weights.py`. It supports three
+modes — `benchmark`, `image_infer <input> <output>`, and `correctness <image>` —
+documented in [source/deep_learning_inference/README.md](source/deep_learning_inference/README.md).
 
-Run the LeetGPU challenge 25 categorical-cross-entropy functional cases and
-its `N=10,000`, `C=1,000` performance shape with:
+## Python DSL Backends
 
-```bash
-./build/default/source/categorical_cross_entropy/categorical_cross_entropy
-./build/default/source/categorical_cross_entropy/categorical_cross_entropy --performance
-```
+Some kernels also ship optional Python DSL backends under
+`source/<kernel>/python/<dsl>/<kernel>.py`, where `<dsl>` is `triton` or
+`cute-dsl`. These are standalone scripts rather than CMake targets. A kernel may
+be Python-only, as `vector_addition` is: it has no CUDA or OpenCL target.
 
-Run the LeetGPU challenge 28 Gaussian-blur functional cases and its
-`512x512` image with a `7x7` kernel performance shape with:
-
-```bash
-./build/default/source/gaussian_blur/gaussian_blur
-./build/default/source/gaussian_blur/gaussian_blur --performance
-```
-
-The performance output distinguishes CPU throughput, GPU kernel-only
-throughput, and GPU end-to-end throughput. Timing goes through
-`benchmark()`/`benchmarkWithReset()` for host-side timing and
-`benchmarkDevice()`/`benchmarkDeviceWithReset()` for device-measured
-kernel-only time alongside end-to-end, all in `source/utils/benchmark.h`.
-Shared unit converters (GFLOP/s, GB/s, million items/s, speedup), applied to
-a result's `median_ms`, live in `source/utils/benchmark_helpers.h` and can be
-reused by other synchronous kernel harnesses.
-
-### Python DSL backends
-
-Some kernels additionally ship optional Python DSL backends at
-`source/<kernel>/python/<dsl>/<kernel>.py`, `<dsl>` ∈ `triton`, `cute-dsl`. These are
-standalone scripts, not CMake targets, and a kernel may be Python-only (e.g.
-`vector_addition`, which has no CUDA/OpenCL target at all).
-
-Setup:
+Install the shared dependencies:
 
 ```bash
 pip install -r source/utils/python/requirements.txt
 ```
 
-Run from the repo root:
+Run the scripts from the repository root:
 
 ```bash
 python source/sigmoid/python/triton/sigmoid.py
@@ -235,61 +250,67 @@ python source/vector_addition/python/triton/vector_addition.py --performance
 python source/vector_addition/python/cute-dsl/vector_addition.py
 ```
 
-Each script is validated with the shared `gpu_bench` helper and exits `0`/`1`/`77`
-(pass/fail/missing optional dependency, SKIPPED); see `AGENTS.md` ("Testing And
-Benchmarking") for the full contract.
+Every script uses the shared `gpu_bench` helper and exits `0` for pass, `1` for
+failure, or `77` when an optional dependency is missing (reported as SKIPPED).
+See "Testing And Benchmarking" in [AGENTS.md](AGENTS.md) for the full contract.
 
-### Planned Kernels
+## Documentation and Planned Work
 
-- `lora_linear` is design-only and has no build target yet. See the
-  [LoRA linear implementation plan](specs/2026-07-14-lora-linear/plan.md).
+- [docs/README.md](docs/README.md) is the documentation index: setup, guides,
+  optimization rulebooks, and complexity studies.
+- `specs/` holds dated feature packages (`requirements.md`, `plan.md`,
+  `validation.md`) for planned or in-flight work. These describe intent, not
+  shipped behavior.
+- `lora_linear` is design-only and has no build target yet; see the
+  [LoRA linear plan](specs/2026-07-14-lora-linear/plan.md).
 
-### GPU MODE Competition
-- `gpu-mode/` - GPU MODE kernel competition tools and submissions
-  - `SETUP_GUIDE.md` - Complete guide for participating in GPU MODE competitions
-  - `tools/` - Helper scripts for setup, submission, and quick reference
-  - `submissions/` - Example kernel submissions (e.g., NVFP4 GEMM baseline)
+## GPU MODE Competition
 
-### Documentation
-- `docs/` - Documentation index and guides; start at [docs/README.md](docs/README.md)
-- `specs/` - Dated specifications (`requirements.md`, `plan.md`, `validation.md`) for planned or in-flight work
+The `gpu-mode/` directory contains competition tooling and submissions:
 
-### Development Tools
-- `.devcontainer/` - Docker-based CUDA development environment (VS Code Dev Containers)
-- `cuda_perf_analysis.sh` - General-purpose CUDA performance analysis script (auto-detects nvprof/ncu/nsys)
+- `SETUP_GUIDE.md` — setup for GPU MODE kernel competitions
+- `tools/` — helper scripts for setup, submission, and quick reference
+- `submissions/` — example submissions, including an NVFP4 GEMM baseline
 
 ## Examples
 
-For detailed code examples and benchmarks, see [docs/guides/examples.md](docs/guides/examples.md).
+For framework comparisons and code examples, see
+[docs/guides/examples.md](docs/guides/examples.md).
 
-For agentic workflows and repo-specific coding-agent guidance, start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md).
+For agent workflows and repository-specific guidance, start with
+[AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md).
 
 ## Further Resources and References
 
 ### GPU Programming Communities
+
 * [GPU Mode GitHub](https://github.com/gpu-mode)
 * [LeetGPU](https://leetgpu.com)
-* [reference-kernels](https://github.com/gpu-mode/reference-kernels) - Reference kernels for the KernelBot competitions on [discord.gg/gpumode](https://discord.gg/gpumode)
+* [reference-kernels](https://github.com/gpu-mode/reference-kernels) — reference kernels for the KernelBot competitions on [discord.gg/gpumode](https://discord.gg/gpumode)
 * [Course on CUDA programming at Oxford Mathematical Institute](https://people.maths.ox.ac.uk/~gilesm/cuda/)
 * [Interactive GPU learning resource](https://brrrviz.com/)
 
 ### Frameworks and Libraries
+
 * [NVIDIA CUDA Samples](https://github.com/NVIDIA/cuda-samples)
 * [TinyGrad GitHub](https://github.com/geohot/tinygrad)
 * [Triton GitHub](https://github.com/openai/triton)
-* [CUTLASS GitHub](https://github.com/NVIDIA/cutlass) - High-performance GEMM templates for CUDA
-* [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile) - cuTile Python programming language for GPUs
+* [CUTLASS GitHub](https://github.com/NVIDIA/cutlass) — high-performance GEMM templates for CUDA
+* [NVIDIA CUDA Tile](https://developer.nvidia.com/cuda/tile) — cuTile Python programming language for GPUs
 * [Mojo Documentation](https://docs.modular.com/mojo)
 
-For setup instructions for these frameworks, see [docs/setup/external-frameworks.md](docs/setup/external-frameworks.md).
+Setup instructions for these frameworks are in
+[docs/setup/external-frameworks.md](docs/setup/external-frameworks.md).
 
 ### NVIDIA CCCL (CUDA C++ Core Libraries)
-* [CCCL GitHub](https://github.com/NVIDIA/cccl) - Unified repository containing:
-  - **Thrust** - High-level C++ parallel algorithms library
-  - **CUB** - Low-level CUDA building blocks and primitives
-  - **libcu++** - CUDA C++ Standard Library (heterogeneous implementation)
+
+* [CCCL GitHub](https://github.com/NVIDIA/cccl) — unified repository containing:
+  - **Thrust** — high-level C++ parallel algorithms
+  - **CUB** — low-level CUDA building blocks and primitives
+  - **libcu++** — the CUDA C++ standard library
 
 ### AI-Assisted CUDA Development
+
 * [AI CUDA Engineer: Official Paper and Leaderboard](https://pub.sakana.ai/ai-cuda-engineer)
 * [AI CUDA Engineer: Dataset](https://huggingface.co/datasets/SakanaAI/AI-CUDA-Engineer-Archive)
 * [ByteDance CUDA Agent](https://github.com/BytedTsinghua-SIA/CUDA-Agent)

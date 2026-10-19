@@ -1,16 +1,18 @@
-# Building gpu-playground on Google Colab
+# Building on Google Colab
 
 > Audience: humans · Applies to: CUDA · Last reviewed: 2026-10
 
-## Prerequisites
+Google Colab's free GPU runtime can build and run this repository's CUDA
+kernels. Select a GPU runtime, clone the repository, configure CMake for that
+GPU's compute capability, build, and run a binary.
 
-Before building, make sure you have a **GPU runtime** enabled:
+## Choose a GPU Runtime
 
-1. Go to **Runtime → Change runtime type**
-2. Select **T4 GPU** (free tier) or a higher-tier GPU if available
-3. Click **Save**
+1. Open **Runtime → Change runtime type**.
+2. Select **T4 GPU** (free tier) or a higher-tier GPU if available.
+3. Click **Save**.
 
-Verify the GPU is available:
+Confirm that the GPU is visible:
 
 ```bash
 !nvidia-smi
@@ -33,17 +35,20 @@ Verify the GPU is available:
 !cmake --build . -j$(nproc)
 ```
 
-## Setting the Right CUDA Architecture
+`CMAKE_CUDA_ARCHITECTURES` must match the session's GPU. Otherwise the build
+succeeds but the binary fails at runtime with an invalid instruction.
 
-The `-DCMAKE_CUDA_ARCHITECTURES` flag must match your Colab GPU. Common values:
+## Set the CUDA Architecture
 
-| GPU | Compute Capability | Flag |
-|-----|-------------------|------|
+Common Colab GPUs and their flags:
+
+| GPU | Compute capability | Flag |
+|-----|--------------------|------|
 | Tesla T4 (free tier) | 7.5 | `-DCMAKE_CUDA_ARCHITECTURES=75` |
 | A100 | 8.0 | `-DCMAKE_CUDA_ARCHITECTURES=80` |
 | L4 | 8.9 | `-DCMAKE_CUDA_ARCHITECTURES=89` |
 
-You can detect it programmatically:
+You can also detect the value programmatically:
 
 ```bash
 !python3 -c "
@@ -54,9 +59,9 @@ print(f'Detected compute capability: {result.stdout.strip()} → use -DCMAKE_CUD
 "
 ```
 
-## Building a Single Target
+## Build and Run a Single Kernel
 
-To build and run only a specific kernel (e.g., `softmax`):
+Building one target is faster. For example, to build and run `softmax`:
 
 ```bash
 %cd /content/gpu-playground/build
@@ -64,7 +69,7 @@ To build and run only a specific kernel (e.g., `softmax`):
 !./source/softmax/softmax
 ```
 
-All compiled binaries are located under `build/source/<kernel>/<kernel>`:
+Every binary lands under `build/source/<kernel>/<kernel>`:
 
 ```bash
 # Examples
@@ -74,10 +79,10 @@ All compiled binaries are located under `build/source/<kernel>/<kernel>`:
 !./source/spmv/spmv
 ```
 
-Available targets:
+Common targets:
 
-| Target | Binary path |
-|--------|-------------|
+| Target | Binary path (relative to `build/`) |
+|--------|------------------------------------|
 | `reverse_array` | `source/reverse_array/reverse_array` |
 | `prefix_sum` | `source/prefix_sum/prefix_sum` |
 | `matrix_transpose` | `source/matrix_transpose/matrix_transpose` |
@@ -93,20 +98,23 @@ Available targets:
 | `value_clipping` | `source/value_clipping/value_clipping` |
 | `rgb_to_grayscale` | `source/rgb_to_grayscale/rgb_to_grayscale` |
 
-## Disabling Specific Kernels
+The [kernel inventory](../../Readme.md#kernel-inventory) lists every target,
+including the CUDA-only kernels added for LeetGPU challenges.
 
-To skip building certain kernels (e.g., to speed up the build):
+## Disable Kernels to Shorten the Build
+
+Each kernel has a `GPU_ENABLE_<KERNEL>` flag, `ON` by default. Disable the ones
+you do not need to cut build time:
 
 ```bash
 !cmake .. -DCMAKE_CUDA_ARCHITECTURES=75 -DGPU_ENABLE_SPMV=OFF -DGPU_ENABLE_GEMM=OFF
 !cmake --build . -j$(nproc)
 ```
 
-Each kernel has a `GPU_ENABLE_<KERNEL>` flag (all `ON` by default).
+## Persist Builds Across Sessions
 
-## Persisting Builds Across Sessions
-
-Colab resets the filesystem on session restart. To avoid rebuilding every time, mount Google Drive:
+Colab resets its filesystem when a session ends. Keep the checkout on Google
+Drive to avoid rebuilding:
 
 ```python
 from google.colab import drive
@@ -120,11 +128,14 @@ drive.mount('/content/drive')
 !mkdir -p build && cd build && cmake .. -DCMAKE_CUDA_ARCHITECTURES=75 && cmake --build . -j$(nproc)
 ```
 
-> **Note:** Building on Google Drive is slower due to network filesystem overhead. An alternative is to keep the source on Drive and copy it to local `/content` for building.
+> **Note:** Building on a Drive mount is slower because every file operation
+> crosses a network filesystem. Keep the source on Drive and copy it to local
+> `/content` for builds.
 
-## Profiling (Optional)
+## Profile a Kernel (Optional)
 
-The repo includes `cuda_perf_analysis.sh` for profiling with Nsight Compute. Check availability first:
+`cuda_perf_analysis.sh` auto-detects an available profiler. Check for Nsight
+Compute:
 
 ```bash
 !which ncu && ncu --version || echo "Nsight Compute not available in this Colab runtime"
@@ -137,29 +148,33 @@ If `ncu` is available:
 !bash cuda_perf_analysis.sh ./build/source/gemm/gemm
 ```
 
-As an alternative, `nvprof` (legacy) or the CUDA event timing built into each kernel can be used for benchmarking.
+Otherwise, the harness's CUDA event timing still measures kernels; legacy
+`nvprof` may also be available.
 
 ## Troubleshooting
 
-**CMake not found or too old:**
+**CMake is missing or too old:**
 
 ```bash
 !apt-get update && apt-get install -y cmake
 !cmake --version  # should be 3.20+
 ```
 
-**CUDA toolkit not found:**
+**The CUDA toolkit is missing:**
 
 ```bash
 !nvcc --version
-# If missing (unlikely on GPU runtime):
+# If missing (unlikely on a GPU runtime):
 !apt-get install -y nvidia-cuda-toolkit
 ```
 
-**Wrong GPU architecture (illegal instruction at runtime):**
+**The binary fails at runtime with an illegal instruction:**
 
-Double-check the compute capability with `nvidia-smi` and rebuild with the correct `-DCMAKE_CUDA_ARCHITECTURES` value.
+The architecture flag does not match the assigned GPU. Check the compute
+capability with `nvidia-smi` and rebuild with the correct
+`-DCMAKE_CUDA_ARCHITECTURES` value.
 
-**Session disconnected mid-build:**
+**The session disconnects mid-build:**
 
-Colab sessions can disconnect after ~90 minutes of inactivity (free tier). For long builds, keep the browser tab active or use the Google Drive persistence approach described above.
+Free-tier sessions can disconnect after roughly 90 minutes of inactivity. Keep
+the tab active during long builds, or use the Drive persistence approach above.

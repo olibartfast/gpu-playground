@@ -2,19 +2,24 @@
 
 > Audience: humans, agents · Applies to: all · Last reviewed: 2026-10
 
-This guide walks through adding a self-contained CUDA + OpenCL kernel to the `source/` directory.
+This guide walks through adding a self-contained kernel to `source/`. A kernel
+is one directory containing a backend-agnostic test harness, a CPU reference,
+and one implementation per supported backend. CMake wires the variants together
+behind a single `GPU_ENABLE_<KERNEL>` switch, so the same harness exercises
+CUDA, OpenCL C, or OpenCL C++ without source changes.
 
 The three-backend layout is the default. A task may explicitly add a CUDA-only
-example when the operation or dependency is backend-specific. In that case:
+example when the operation or its dependency is backend-specific. In that case:
 
 - keep CUDA code under `source/<kernel>/cuda/`
-- ensure OpenCL configurations skip the target cleanly
+- make OpenCL configurations skip the target cleanly
 - mark the backend coverage as CUDA-only in `Readme.md`
-- validate an OpenCL configure/build so the exception does not break the matrix
+- validate an OpenCL configure and build, so the exception does not break the
+  build matrix
 
 ## Directory Layout
 
-Every kernel follows the same layout with separate `cuda/`, `opencl/`, and `opencl_cpp/` subdirectories:
+Every portable kernel follows the same layout:
 
 ```
 source/<kernel-name>/
@@ -31,15 +36,23 @@ source/<kernel-name>/
 └── main.cpp             ← backend-agnostic test harness
 ```
 
-> **File naming:** The directory name and binary name match. Source files inside use a short name that may differ (e.g. `interleave_arrays/` contains `interleave.h` / `interleave.cpp`).
+> **File naming:** The directory name and the binary name match. Source files
+> inside may use a shorter name — for example, `interleave_arrays/` contains
+> `interleave.h` and `interleave.cpp`.
 
 ---
 
-## Step 1 — Create the source files
+## Step 1 — Create the Source Files
+
+Each backend exposes the same small, backend-agnostic API: a CPU reference and a
+host-pointer GPU wrapper. Allocation, transfers, and cleanup stay inside the
+implementation file. The harness sees only plain host pointers and scalar
+arguments, which is what keeps it backend-agnostic.
 
 ### `cuda/<kernel>.h`
 
-Declare your `__global__` kernels, device-pointer launch wrappers, the CPU reference, and a host-pointer GPU wrapper used by `main.cpp`:
+Declare the `__global__` kernels, the CPU reference, and the host-pointer GPU
+wrapper used by `main.cpp`:
 
 ```cpp
 #pragma once
@@ -55,7 +68,9 @@ void myKernel_gpu(const float* h_input, float* h_output, int n);
 
 ### `cuda/<kernel>.cpp`
 
-Implement everything. Include `cuda_helpers.h` for `CUDA_CHECK` and `getTime()`. The host-pointer wrapper handles all allocation, transfer, and cleanup:
+Implement the kernel, the reference, and the wrapper. Include `cuda_helpers.h`
+for `CUDA_CHECK` and `getTime()`. The host-pointer wrapper owns all allocation,
+transfer, and cleanup:
 
 ```cpp
 #include "my_kernel.h"
@@ -86,11 +101,13 @@ void myKernel_gpu(const float* h_input, float* h_output, int n) {
 }
 ```
 
-Key rules (see [`optimization/cuda.md`](../optimization/cuda.md) for the full list):
-- Thread block size must be a multiple of 32; start with 128–256 threads/block.
+The core CUDA rules apply here; the full list is in
+[the CUDA optimization guide](../optimization/cuda.md).
+
+- The thread block size must be a multiple of 32; start with 128–256 threads.
 - Wrap every CUDA API call with `CUDA_CHECK`.
 - Call `cudaGetLastError()` after every kernel launch.
-- No `malloc`/`new` inside kernels.
+- Never allocate memory inside a kernel.
 
 ### `opencl/<kernel>.h`
 
@@ -105,7 +122,8 @@ void myKernel_gpu(const float* h_input, float* h_output, int n);
 
 ### `opencl/<kernel>.cpp`
 
-Embed the kernel source as a string literal and use `opencl_c_helpers.h` for boilerplate:
+Embed the kernel source as a string literal and use `opencl_c_helpers.h` for the
+context, program, and teardown boilerplate:
 
 ```cpp
 #include "my_kernel.h"
@@ -152,7 +170,8 @@ void myKernel_gpu(const float* h_input, float* h_output, int n) {
 
 ### `opencl_cpp/<kernel>.h`
 
-Same backend-agnostic API as the OpenCL C API header — no OpenCL types:
+Use the same backend-agnostic API as the OpenCL C header — again, no OpenCL
+types:
 
 ```cpp
 #pragma once
@@ -163,7 +182,8 @@ void myKernel_gpu(const float* h_input, float* h_output, int n);
 
 ### `opencl_cpp/<kernel>.cpp`
 
-Use `opencl_helpers.h` (the C++ wrapper helper) with RAII `cl::` objects and exception-based error handling:
+Use `opencl_helpers.h` (the C++ wrapper helper) with RAII `cl::` objects and
+exception-based error handling:
 
 ```cpp
 #include "my_kernel.h"
@@ -212,14 +232,19 @@ void myKernel_gpu(const float* h_input, float* h_output, int n) {
 }
 ```
 
-**Notes for special cases:**
-- **Local (shared) memory**: pass `cl::Local(sharedSize)` as a kernel argument instead of a buffer.
-- **2D dispatch** (matrix kernels): use `cl::NDRange(cols, rows)` for global and local ranges.
-- **Build options**: pass extra defines via `clppBuildProgram(ctx, dev, src, "-D TILE_SIZE=16")`.
+Special cases:
+
+- **Local (shared) memory:** pass `cl::Local(sharedSize)` as a kernel argument
+  instead of a buffer.
+- **2D dispatch** for matrix kernels: use `cl::NDRange(cols, rows)` for the
+  global and local ranges.
+- **Build options:** pass extra defines through
+  `clppBuildProgram(ctx, dev, src, "-D TILE_SIZE=16")`.
 
 ### `main.cpp`
 
-The test harness selects the backend at compile time and only calls the backend-agnostic API:
+The harness selects a backend at compile time and calls only the
+backend-agnostic API:
 
 ```cpp
 #ifdef GPU_OPENCL_CPP_BACKEND
@@ -256,16 +281,20 @@ int main() {
 }
 ```
 
-If the kernel writes into a buffer it also reads (an in-place kernel, or GEMM's `beta * C` term), use
-`benchmarkWithReset(fn, reset)` instead — `reset` restores the buffer before every call and is not timed.
-Without it, each iteration measures different work and the correctness check afterwards compares against
-an accumulated result rather than a single clean pass.
+Three timing paths are available:
 
-If the GPU wrapper exposes a kernel-only time (e.g. a `float* kernel_time_ms` out-parameter filled
-from CUDA events), use `benchmarkDevice(fn)` / `benchmarkDeviceWithReset(fn, reset)` instead of
-`benchmark()`/`benchmarkWithReset()`: `fn` returns that call's device-measured milliseconds, and the
-result's `end_to_end` and `device` fields are each a `BenchResult`, letting the harness report
-kernel-only time alongside host-side overhead.
+- **Ordinary kernels:** `benchmark(fn)`.
+- **In-place kernels, or GEMM's `beta * C` term:** `benchmarkWithReset(fn,
+  reset)`. `reset` restores the buffer before every call and stays outside the
+  timed region. Without it, each iteration measures different work and the
+  correctness check compares against an accumulated result rather than one clean
+  pass.
+- **Kernel-only time:** if the GPU wrapper exposes a kernel time through a
+  `float* kernel_time_ms` out-parameter, use `benchmarkDevice(fn)` or
+  `benchmarkDeviceWithReset(fn, reset)`. `fn` returns that call's
+  device-measured milliseconds, and the result's `end_to_end` and `device`
+  fields are each a `BenchResult`, so the harness can report kernel-only time
+  alongside host overhead.
 
 ---
 
@@ -287,13 +316,14 @@ else()
 endif()
 ```
 
-Source files use the `.cpp` extension. CUDA files are compiled as CUDA via `set_source_files_properties`.
+Source files keep the `.cpp` extension; CUDA files are compiled as CUDA through
+`set_source_files_properties`.
 
 ---
 
-## Step 3 — Register in the root `CMakeLists.txt`
+## Step 3 — Register in the Root `CMakeLists.txt`
 
-Add an `option` and an `add_subdirectory` call alongside the existing kernels:
+Add an option and a subdirectory call alongside the existing kernels:
 
 ```cmake
 option(GPU_ENABLE_MY_KERNEL "Build my_kernel kernel" ON)
@@ -303,7 +333,7 @@ if(GPU_ENABLE_MY_KERNEL)
 endif()
 ```
 
-The `GPU_ENABLE_<NAME>` flag lets users selectively disable a kernel at configure time:
+The `GPU_ENABLE_<NAME>` flag lets users disable a kernel at configure time:
 
 ```bash
 cmake -DGPU_ENABLE_MY_KERNEL=OFF ..
@@ -311,21 +341,21 @@ cmake -DGPU_ENABLE_MY_KERNEL=OFF ..
 
 ---
 
-## Step 4 — Update `Readme.md` (required)
+## Step 4 — Update `Readme.md` (Required)
 
-Every new kernel must update the root `Readme.md` in the same change. Update:
+Every new kernel must update the root `Readme.md` in the same change:
 
 - the project-structure kernel count or wording
-- the Kernel Implementations table, including backend coverage
+- the kernel inventory table, including backend coverage
 - any prerequisites or non-default build and run commands
-- links to a kernel-specific README when setup is more than one command
+- links to a kernel-specific README when setup takes more than one command
 
 Agents must not present a new kernel as complete until this documentation is
 accurate.
 
 ---
 
-## Step 5 — Build and run
+## Step 5 — Build and Run
 
 ```bash
 # CUDA build (default: SM 7.0)
@@ -354,33 +384,51 @@ cmake --build build/opencl_cpp -j$(nproc) --target my_kernel
 
 ---
 
-## Optional: Python DSL backend
+## Optional: Python DSL Backend
 
-A kernel may additionally (or, for a Python-only kernel like `vector_addition`, instead)
-ship a Python DSL backend at `source/<kernel>/python/<dsl>/<kernel>.py`, `<dsl>` ∈ `triton`,
-`cute-dsl`. These are standalone scripts run from the repo root (`python
-source/<kernel>/python/<dsl>/<kernel>.py [--performance]`), not CMake targets.
+A kernel may also — or, for a Python-only kernel such as `vector_addition`,
+instead — ship a Python DSL backend at
+`source/<kernel>/python/<dsl>/<kernel>.py`, where `<dsl>` is `triton` or
+`cute-dsl`. These are standalone scripts run from the repository root
+(`python source/<kernel>/python/<dsl>/<kernel>.py [--performance]`), not CMake
+targets.
 
-Follow the shared `gpu_bench` contract: `require(...)` the DSL module before importing it so
-a missing dependency exits `77` (SKIPPED) instead of failing, and validate/time `solve(...)`
-through `gpu_bench`. See `AGENTS.md` ("Testing And Benchmarking") for the full contract.
+Follow the shared `gpu_bench` contract: call `require(...)` before importing the
+DSL module so a missing dependency exits `77` (SKIPPED) rather than failing, and
+validate and time `solve(...)` through `gpu_bench`. See "Testing And
+Benchmarking" in [AGENTS.md](../../AGENTS.md) for the full contract.
 
 ---
 
 ## Checklist
 
-- [ ] `cuda/<kernel>.h` — `#pragma once`, `cuda_runtime.h`, `__global__` decls, host-pointer wrapper decl
-- [ ] `cuda/<kernel>.cpp` — CUDA kernel + CPU ref + host-pointer wrapper; `CUDA_CHECK` on all API calls; `cudaGetLastError()` after launch
-- [ ] `opencl/<kernel>.h` — `#pragma once`, backend-agnostic function signatures only (no OpenCL types)
-- [ ] `opencl/<kernel>.cpp` — kernel string literal, `opencl_c_helpers.h`, `CL_CHECK` on all API calls, `clTeardown` to release resources
-- [ ] `opencl_cpp/<kernel>.h` — `#pragma once`, same backend-agnostic signatures as `opencl/<kernel>.h`
-- [ ] `opencl_cpp/<kernel>.cpp` — kernel string literal, `opencl_helpers.h`, `cl::` RAII objects, `try/catch (cl::Error)` for error handling
-- [ ] `main.cpp` — 3-way `#ifdef GPU_OPENCL_CPP_BACKEND` / `#elif GPU_OPENCL_BACKEND` / `#else` guard; calls only `*_cpu()` and `*_gpu()` wrappers; validates CPU vs GPU output
-- [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` (or `benchmarkDevice()` / `benchmarkDeviceWithReset()` for kernel-only time) in `source/utils/benchmark.h`, not a bare `steady_clock` pair
-- [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()` block; correct `set_source_files_properties` for CUDA path
-- [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` + `add_subdirectory`
-- [ ] Root `Readme.md` — kernel inventory, backend coverage, and required build/run instructions
+- [ ] `cuda/<kernel>.h` — `#pragma once`, `cuda_runtime.h`, `__global__`
+      declarations, host-pointer wrapper declaration
+- [ ] `cuda/<kernel>.cpp` — CUDA kernel, CPU reference, host-pointer wrapper;
+      `CUDA_CHECK` on every API call; `cudaGetLastError()` after launch
+- [ ] `opencl/<kernel>.h` — `#pragma once`, backend-agnostic signatures only
+      (no OpenCL types)
+- [ ] `opencl/<kernel>.cpp` — kernel string literal, `opencl_c_helpers.h`,
+      `CL_CHECK` on every API call, `clTeardown` to release resources
+- [ ] `opencl_cpp/<kernel>.h` — `#pragma once`, same signatures as
+      `opencl/<kernel>.h`
+- [ ] `opencl_cpp/<kernel>.cpp` — kernel string literal, `opencl_helpers.h`,
+      `cl::` RAII objects, `try/catch (cl::Error)`
+- [ ] `main.cpp` — three-way `#ifdef GPU_OPENCL_CPP_BACKEND` /
+      `#elif GPU_OPENCL_BACKEND` / `#else` guard; calls only `*_cpu()` and
+      `*_gpu()` wrappers; validates CPU against GPU output
+- [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` (or
+      `benchmarkDevice()` / `benchmarkDeviceWithReset()` for kernel-only time)
+      in `source/utils/benchmark.h`, never a bare `steady_clock` pair
+- [ ] `CMakeLists.txt` — `if(USE_OPENCL_CPP)` / `elseif(USE_OPENCL)` / `else()`
+      block; correct `set_source_files_properties` for the CUDA path
+- [ ] Root `CMakeLists.txt` — `option(GPU_ENABLE_...)` and `add_subdirectory`
+- [ ] Root `Readme.md` — kernel inventory, backend coverage, and required
+      build/run instructions
 - [ ] Thread block size is a multiple of 32
-- [ ] All CUDA API calls wrapped in `CUDA_CHECK`; all OpenCL C calls wrapped in `CL_CHECK`; OpenCL C++ uses exception handling
-- [ ] (optional) `python/<dsl>/<kernel>.py` — follows the `gpu_bench` contract (AGENTS.md), exits `0`/`1`/`77`
-- [ ] (optional) Root `Readme.md` — Python DSL backend noted in the kernel table / Python DSL backends section
+- [ ] All CUDA API calls use `CUDA_CHECK`; all OpenCL C calls use `CL_CHECK`;
+      OpenCL C++ uses exception handling
+- [ ] (optional) `python/<dsl>/<kernel>.py` — follows the `gpu_bench` contract
+      in `AGENTS.md` and exits `0`, `1`, or `77`
+- [ ] (optional) Root `Readme.md` — Python DSL backend noted in the kernel
+      table and the Python DSL section
