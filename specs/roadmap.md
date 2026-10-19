@@ -42,3 +42,17 @@ Branch: `feat/python-backend`.
 | 1 | `source/utils/python/gpu_bench.py` + requirements | Done 2026-10-01 |
 | 2 | Migrate the 3 existing Triton/CuTe scripts; docs | Done 2026-10-01 (CuTe execution gap: cutlass not installed) |
 | Idea | GPU-less `py_compile` CI job; Python ports of more kernels; CuTe DSL environment | Idea |
+
+## HIP / AMD backend
+
+Specification: [HIP backend foundation](2026-10-19-hip-backend/requirements.md).
+Branch: `feat/hip-backend` (proposed; not created).
+
+| Phase | Outcome | Status |
+|---|---|---|
+| 0 | Requirements, plan, validation, scope freeze | Done 2026-10-19 |
+| 1 | `USE_HIP` build path, `hip_helpers`, `hip` preset, `gfx942` configure | Planned |
+| 2 | `sigmoid` HIP backend validated on MI300X | Planned |
+| 3 | Wave64 policy + `categorical_cross_entropy` HIP backend + device timing | Planned |
+| 4 | Docs, CUDA/OpenCL regression, integration | Planned |
+| Future | Remaining portable kernels, GEMM via rocWMMA/MFMA, cooperative groups, CI, `gfx950`/RDNA | Deferred |

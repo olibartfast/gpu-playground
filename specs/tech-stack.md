@@ -13,3 +13,7 @@ Evidence: [CMake](../CMakeLists.txt) and [repository contract](../AGENTS.md).
 - Optional Python DSL backends (Triton, CuTe DSL) at `source/<kernel>/python/<dsl>/<kernel>.py`
   are standalone scripts, not CMake targets. They share a torch-based benchmarking helper,
   `source/utils/python/gpu_bench.py`, rather than `source/utils/benchmark.h`.
+- AMD GPU support is planned through HIP for MI300X (`gfx942`), specified in
+  [the HIP backend packet](2026-10-19-hip-backend/requirements.md). HIP is not
+  implemented yet; CUDA remains the default build and CUDA/OpenCL remain the
+  supported backends.
