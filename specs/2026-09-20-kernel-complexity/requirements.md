@@ -38,9 +38,6 @@ and existing repository rules. Preserve unrelated working-tree edits.
 ## Discovery evidence
 
 - Root CMake and tracked `main.cpp` files enumerate 18 implemented harness targets.
-- The local Readme adds `softmax_attention`; its untracked source contains
-  placeholder functions and it has no root CMake target. Record as pending,
-  excluded from implemented coverage until real code and validation exist.
 - `source/prefix_sum/cuda/prefix_sum.cpp` uses Hillis-Steele stages. Its first
   stage loops to N rather than block width; the block-sum stage uses one block
   with one thread per partial sum. Inspect hardware limits before generalizing.
