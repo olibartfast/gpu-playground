@@ -75,7 +75,7 @@ cmake --build --preset hip -j8
 ctest --preset hip
 ```
 
-See `docs/setup/amd-neocloud.md` for remote AMD execution. Backend options
+See `docs/setup/amd-developer-cloud.md` for remote AMD execution. Backend options
 `USE_HIP`, `USE_OPENCL`, and `USE_OPENCL_CPP` are mutually exclusive.
 
 OpenCL C++ wrapper:

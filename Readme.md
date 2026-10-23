@@ -66,7 +66,7 @@ To select an architecture explicitly, add `-DCMAKE_HIP_ARCHITECTURES=gfx942`
 for MI300X. Binaries are under `build/hip/source/<kernel>/<kernel>`. All 20 C++
 kernel targets have HIP implementations; the 19 self-contained harnesses are
 registered with CTest. Python DSL backends retain their separate requirements.
-See [Running on an AMD neocloud](docs/setup/amd-neocloud.md) for the SSH runbook,
+See [Running on AMD Developer Cloud](docs/setup/amd-developer-cloud.md) for the SSH runbook,
 ROCm checks, source transfer, validation, and result collection.
 
 ### CUDA presets (recommended)

@@ -47,7 +47,7 @@ HIP implementations use `hip/hip_runtime.h` and `hip_helpers.h`, with runtime
 calls and launches checked using `HIP_CHECK`. Keep the same host-pointer wrapper
 API. Add `GPU_HIP_BACKEND` to the harness selector and validate via
 `cmake --preset hip`, `cmake --build --preset hip`, and `ctest --preset hip`.
-See [the AMD neocloud runbook](../setup/amd-neocloud.md) for toolchain setup.
+See [the AMD Developer Cloud runbook](../setup/amd-developer-cloud.md) for toolchain setup.
 
 ---
 

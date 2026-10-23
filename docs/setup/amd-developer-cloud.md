@@ -1,14 +1,15 @@
-# Running on an AMD Neocloud
+# Running on AMD Developer Cloud
 
 > Audience: humans, agents · Applies to: all · Last reviewed: 2026-10
 
-Use a ROCm-enabled AMD GPU instance to build the HIP implementations in
+Use a ROCm-enabled AMD GPU Droplet (AMD Developer Cloud, built on DigitalOcean
+infrastructure) to build the HIP implementations in
 `source/<kernel>/hip/`. The shared C++ harnesses compare CPU and GPU results.
 CUDA remains the default backend; HIP is selected with `USE_HIP=ON`.
 
 ## Connect and inspect the instance
 
-Provision an AMD GPU instance with ROCm development tools already installed.
+Provision an AMD GPU Droplet (`gpu-mi300x1-192gb`) with ROCm development tools already installed.
 The provider console supplies the IP address and login user. From your laptop:
 
 ```bash
@@ -133,7 +134,7 @@ validation against PyTorch or evidence of trained model quality.
 
 ## Verified session: 2026-10-23
 
-The run used `root@165.245.142.116`, an AMD Instinct MI300X VF (`gfx942`), CMake 3.28.3,
+The run used `root@YOUR_INSTANCE_IP`, an AMD Instinct MI300X VF (`gfx942`), CMake 3.28.3,
 HIP `7.16.26385-0000000`, and AMD clang `24.0.0git`. The installed path was
 `/opt/rocm/llvm/bin/clang++`; the hostname/image label mentioned ROCm 10.1,
 which should not be confused with the version reported by `hipconfig`.
@@ -164,11 +165,11 @@ made.
 From the laptop:
 
 ```bash
-mkdir -p /tmp/amd-neocloud-results
+mkdir -p /tmp/amd-developer-cloud-results
 scp -o IdentitiesOnly=yes -i "$AMD_KEY" \
   "$AMD_HOST":/root/gpu-playground-hip-run/build/hip/build.log \
   "$AMD_HOST":/root/gpu-playground-hip-run/build/hip/ctest.log \
-  /tmp/amd-neocloud-results/
+  /tmp/amd-developer-cloud-results/
 ```
 
 Keep the GPU model, architecture, compiler version, source archive, build type,
