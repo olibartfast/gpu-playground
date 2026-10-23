@@ -1,4 +1,8 @@
+#ifdef GPU_HIP_BACKEND
+#include "hip/fp16_dot_product.h"
+#else
 #include "cuda/fp16_dot_product.h"
+#endif
 #include "benchmark.h"
 #include "benchmark_helpers.h"
 

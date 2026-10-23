@@ -1,4 +1,7 @@
-if(USE_OPENCL_CPP)
+if(USE_HIP)
+    add_library(hip_helpers INTERFACE)
+    target_include_directories(hip_helpers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+elseif(USE_OPENCL_CPP)
     add_library(opencl_cpp_helpers INTERFACE)
     target_include_directories(opencl_cpp_helpers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(opencl_cpp_helpers INTERFACE OpenCL::OpenCL)

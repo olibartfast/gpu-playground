@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_CPP_BACKEND
+#if defined(GPU_HIP_BACKEND)
+#include "hip/gaussian_blur.h"
+#elif defined(GPU_OPENCL_CPP_BACKEND)
 #include "opencl_cpp/gaussian_blur.h"
 #elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/gaussian_blur.h"

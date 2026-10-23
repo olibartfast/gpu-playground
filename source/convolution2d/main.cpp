@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_CPP_BACKEND
+#if defined(GPU_HIP_BACKEND)
+#include "hip/convolution2d.h"
+#elif defined(GPU_OPENCL_CPP_BACKEND)
 #include "opencl_cpp/convolution2d.h"
 #elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/convolution2d.h"

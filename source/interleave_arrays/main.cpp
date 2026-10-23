@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_CPP_BACKEND
+#if defined(GPU_HIP_BACKEND)
+#include "hip/interleave.h"
+#elif defined(GPU_OPENCL_CPP_BACKEND)
 #include "opencl_cpp/interleave.h"
 #elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/interleave.h"

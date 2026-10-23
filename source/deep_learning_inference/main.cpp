@@ -1,5 +1,13 @@
+#ifdef GPU_HIP_BACKEND
+#include "hip/dnn_inference.h"
+#else
 #include "cuda/dnn_inference.h"
+#endif
+#ifdef GPU_HIP_BACKEND
+#include "hip/harness_runtime.h"
+#else
 #include "cuda_helpers.h"
+#endif
 
 #include <algorithm>
 #include <cstdlib>

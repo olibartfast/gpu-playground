@@ -6,13 +6,13 @@ This guide walks through adding a self-contained kernel to `source/`. A kernel
 is one directory containing a backend-agnostic test harness, a CPU reference,
 and one implementation per supported backend. CMake wires the variants together
 behind a single `GPU_ENABLE_<KERNEL>` switch, so the same harness exercises
-CUDA, OpenCL C, or OpenCL C++ without source changes.
+CUDA, HIP, OpenCL C, or OpenCL C++ without source changes.
 
-The three-backend layout is the default. A task may explicitly add a CUDA-only
+The four-backend layout is the default. A task may explicitly add a CUDA-only
 example when the operation or its dependency is backend-specific. In that case:
 
 - keep CUDA code under `source/<kernel>/cuda/`
-- make OpenCL configurations skip the target cleanly
+- declare `BACKENDS CUDA` so HIP and OpenCL configurations skip the target cleanly
 - mark the backend coverage as CUDA-only in `Readme.md`
 - validate an OpenCL configure and build, so the exception does not break the
   build matrix
@@ -27,6 +27,9 @@ source/<kernel-name>/
 ├── cuda/
 │   ├── <kernel>.h       ← CUDA declarations (includes cuda_runtime.h)
 │   └── <kernel>.cpp     ← CUDA kernel + CPU reference implementations
+├── hip/
+│   ├── <kernel>.h       ← HIP declarations
+│   └── <kernel>.cpp     ← HIP kernel + CPU reference implementations
 ├── opencl/
 │   ├── <kernel>.h       ← OpenCL C API declarations (backend-agnostic API only)
 │   └── <kernel>.cpp     ← OpenCL C API kernel + CPU reference implementations
@@ -39,6 +42,12 @@ source/<kernel-name>/
 > **File naming:** The directory name and the binary name match. Source files
 > inside may use a shorter name — for example, `interleave_arrays/` contains
 > `interleave.h` and `interleave.cpp`.
+
+HIP implementations use `hip/hip_runtime.h` and `hip_helpers.h`, with runtime
+calls and launches checked using `HIP_CHECK`. Keep the same host-pointer wrapper
+API. Add `GPU_HIP_BACKEND` to the harness selector and validate via
+`cmake --preset hip`, `cmake --build --preset hip`, and `ctest --preset hip`.
+See [the AMD neocloud runbook](../setup/amd-neocloud.md) for toolchain setup.
 
 ---
 
@@ -247,7 +256,9 @@ The harness selects a backend at compile time and calls only the
 backend-agnostic API:
 
 ```cpp
-#ifdef GPU_OPENCL_CPP_BACKEND
+#if defined(GPU_HIP_BACKEND)
+#include "hip/my_kernel.h"
+#elif defined(GPU_OPENCL_CPP_BACKEND)
 #include "opencl_cpp/my_kernel.h"
 #elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/my_kernel.h"
@@ -257,7 +268,7 @@ backend-agnostic API:
 #include <cstdio>
 #include <cmath>
 #include <vector>
-#include "benchmark.h"   // from source/utils/, available to all three backends
+#include "benchmark.h"   // from source/utils/, available to all backends
 
 int main() {
     const int N = 1 << 20;
@@ -307,7 +318,7 @@ registers the target with CTest:
 gpu_add_kernel(my_kernel)
 ```
 
-This replaces the three-way `if(USE_OPENCL_CPP)` block. It selects the requested
+This replaces a hand-written backend selection block. It selects the requested
 backend, links the matching helper library, defines `GPU_OPENCL_BACKEND` /
 `GPU_OPENCL_CPP_BACKEND` when needed, and skips the target with a status message
 if that backend is not implemented.
@@ -424,7 +435,7 @@ Benchmarking" in [AGENTS.md](../../AGENTS.md) for the full contract.
       `opencl/<kernel>.h`
 - [ ] `opencl_cpp/<kernel>.cpp` — kernel string literal, `opencl_helpers.h`,
       `cl::` RAII objects, `try/catch (cl::Error)`
-- [ ] `main.cpp` — three-way `#ifdef GPU_OPENCL_CPP_BACKEND` /
+- [ ] `main.cpp` — backend selector including `GPU_HIP_BACKEND`, `GPU_OPENCL_CPP_BACKEND` /
       `#elif GPU_OPENCL_BACKEND` / `#else` guard; calls only `*_cpu()` and
       `*_gpu()` wrappers; validates CPU against GPU output
 - [ ] `main.cpp` — timings come from `benchmark()` / `benchmarkWithReset()` (or

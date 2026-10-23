@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_CPP_BACKEND
+#if defined(GPU_HIP_BACKEND)
+#include "hip/gelu.h"
+#elif defined(GPU_OPENCL_CPP_BACKEND)
 #include "opencl_cpp/gelu.h"
 #elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/gelu.h"

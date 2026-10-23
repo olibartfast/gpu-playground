@@ -1,6 +1,6 @@
 # Agent Instructions
 
-This repository is a GPU kernel playground for CUDA and OpenCL experiments. The agentic workflow here is intentionally lightweight: use the repo docs as the operating contract, make changes that stay local to the requested kernel or docs task, and validate performance or correctness claims before presenting them as finished.
+This repository is a GPU kernel playground for CUDA, HIP, and OpenCL experiments. The agentic workflow here is intentionally lightweight: use the repo docs as the operating contract, make changes that stay local to the requested kernel or docs task, and validate performance or correctness claims before presenting them as finished.
 
 ## Goal
 
@@ -28,6 +28,7 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
 - Keep changes scoped to the task. Do not refactor unrelated kernels while working on one kernel.
 - Preserve the existing backend split:
   - CUDA code in `source/<kernel>/cuda/`
+  - AMD HIP code in `source/<kernel>/hip/` (`USE_HIP=ON`, preset `hip`)
   - OpenCL C API code in `source/<kernel>/opencl/`
   - OpenCL C++ wrapper code in `source/<kernel>/opencl_cpp/`
   - Optional Python DSL backends in `source/<kernel>/python/<dsl>/<kernel>.py`,
@@ -35,6 +36,9 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
     targets, and a kernel may be Python-only (e.g. `vector_addition`).
 - Keep public headers backend-agnostic where the repo already follows that pattern.
 - Use `CUDA_CHECK` and `CL_CHECK` style error handling consistently.
+  HIP code uses `HIP_CHECK` from `source/utils/hip_helpers.h`, including launch
+  checks with `hipGetLastError()`. Keep shuffle group widths explicit when
+  porting 32-lane CUDA algorithms to AMD wavefronts.
 - Do not claim a CUDA or OpenCL optimization without either:
   - a correctness check, or
   - a clear note that validation was not run.
@@ -62,6 +66,17 @@ OpenCL C API:
 cmake -B build/opencl -DUSE_OPENCL=ON
 cmake --build build/opencl -j$(nproc)
 ```
+
+AMD HIP (ROCm development tools and CMake 3.21+):
+
+```bash
+cmake --preset hip -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build --preset hip -j8
+ctest --preset hip
+```
+
+See `docs/setup/amd-neocloud.md` for remote AMD execution. Backend options
+`USE_HIP`, `USE_OPENCL`, and `USE_OPENCL_CPP` are mutually exclusive.
 
 OpenCL C++ wrapper:
 

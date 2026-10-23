@@ -2,14 +2,14 @@ include_guard(GLOBAL)
 
 # gpu_add_kernel(<name>
 #   [SOURCE_NAME <stem>]
-#   [BACKENDS <CUDA|OPENCL|OPENCL_CPP>...]
+#   [BACKENDS <CUDA|HIP|OPENCL|OPENCL_CPP>...]
 #   [EXTRA_SOURCES <source>...]
 #   [COMPILE_DEFINITIONS <definition>...]
 #   [COMPILE_OPTIONS <option>...]
 #   [NO_TEST]
 # )
 #
-# Adds one kernel target for the backend selected by USE_OPENCL_CPP / USE_OPENCL.
+# Adds one kernel target for the backend selected by USE_HIP / USE_OPENCL_CPP / USE_OPENCL.
 # The backend source defaults to <backend>/<name>.cpp; SOURCE_NAME overrides the
 # stem for kernels whose files use a shorter name. A backend that is not
 # implemented is skipped with a status message instead of breaking the build.
@@ -34,10 +34,12 @@ function(gpu_add_kernel NAME)
     if(ARG_BACKENDS)
         set(available_backends ${ARG_BACKENDS})
     else()
-        set(available_backends CUDA OPENCL OPENCL_CPP)
+        set(available_backends CUDA HIP OPENCL OPENCL_CPP)
     endif()
 
-    if(USE_OPENCL_CPP)
+    if(USE_HIP)
+        set(selected_backend HIP)
+    elseif(USE_OPENCL_CPP)
         set(selected_backend OPENCL_CPP)
     elseif(USE_OPENCL)
         set(selected_backend OPENCL)
@@ -51,7 +53,20 @@ function(gpu_add_kernel NAME)
         return()
     endif()
 
-    if(selected_backend STREQUAL "CUDA")
+    if(selected_backend STREQUAL "HIP")
+        set(backend_source "hip/${source_stem}.cpp")
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${backend_source}")
+            message(STATUS "${NAME}: HIP backend not implemented; skipping")
+            return()
+        endif()
+        set(extra_sources ${ARG_EXTRA_SOURCES})
+        list(TRANSFORM extra_sources REPLACE "^cuda/" "hip/")
+        set(sources main.cpp ${backend_source} ${extra_sources})
+        set_source_files_properties(${sources} PROPERTIES LANGUAGE HIP)
+        add_executable(${NAME} ${sources})
+        target_link_libraries(${NAME} PRIVATE hip_helpers)
+        target_compile_definitions(${NAME} PRIVATE GPU_HIP_BACKEND)
+    elseif(selected_backend STREQUAL "CUDA")
         set(backend_source "cuda/${source_stem}.cpp")
         if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${backend_source}")
             message(STATUS "${NAME}: CUDA backend not implemented; skipping")

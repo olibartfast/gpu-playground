@@ -55,6 +55,16 @@
         "CMAKE_CUDA_ARCHITECTURES": "native",
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "hip",
+      "displayName": "AMD HIP (native GPU)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/hip",
+      "cacheVariables": {
+        "USE_HIP": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
     }
   ],
   "buildPresets": [
@@ -77,6 +87,10 @@
     {
       "name": "debug",
       "configurePreset": "debug"
+    },
+    {
+      "name": "hip",
+      "configurePreset": "hip"
     }
   ],
   "testPresets": [
@@ -111,6 +125,13 @@
     {
       "name": "debug",
       "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "hip",
+      "configurePreset": "hip",
       "output": {
         "outputOnFailure": true
       }

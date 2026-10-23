@@ -1,6 +1,6 @@
 # GPU Playground
 
-A collection of standalone GPU kernels written in C++/CUDA and OpenCL, built as a
+A collection of standalone GPU kernels written in C++/CUDA, HIP, and OpenCL, built as a
 learning and benchmarking playground. Each kernel pairs a CPU reference with one
 or more GPU backends and a shared test harness, so correctness and performance
 can be compared directly. The project is inspired by resources from the
@@ -48,8 +48,26 @@ For Python, Mojo, CUTLASS, and other frameworks, see
 
 ## Building
 
-Three backends are supported: CUDA (the default), the OpenCL C API (`USE_OPENCL`),
-and the OpenCL C++ wrapper (`USE_OPENCL_CPP`). All are driven by CMake.
+Four backends are supported: CUDA (the default), AMD HIP (`USE_HIP`), the OpenCL
+C API (`USE_OPENCL`), and the OpenCL C++ wrapper (`USE_OPENCL_CPP`). All are driven
+by CMake. Select only one alternative backend at a time.
+
+### AMD HIP
+
+Requires ROCm development tools, an AMD GPU, and CMake 3.21 or newer:
+
+```bash
+cmake --preset hip -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build --preset hip -j8
+ctest --preset hip
+```
+
+To select an architecture explicitly, add `-DCMAKE_HIP_ARCHITECTURES=gfx942`
+for MI300X. Binaries are under `build/hip/source/<kernel>/<kernel>`. All 20 C++
+kernel targets have HIP implementations; the 19 self-contained harnesses are
+registered with CTest. Python DSL backends retain their separate requirements.
+See [Running on an AMD neocloud](docs/setup/amd-neocloud.md) for the SSH runbook,
+ROCm checks, source transfer, validation, and result collection.
 
 ### CUDA presets (recommended)
 
@@ -208,15 +226,16 @@ gpu_playground/
 │   │   ├── opencl_c_helpers.h     ← C API: CL_CHECK + clSetupGPU/clBuildFromSource/clTeardown
 │   │   ├── opencl_helpers.h       ← C++ wrapper: clppGetGPUDevice/clppBuildProgram/clppPreferredLocalSize
 │   │   └── python/                ← gpu_bench.py (torch-only benchmark()/print_bench()/check_close()/require()) + requirements.txt
-│   ├── gemm/                  ← each kernel: main.cpp + cuda/ + opencl/ + opencl_cpp/
-│   │   ├── main.cpp           ← backend-agnostic test harness (3-way #ifdef)
+│   ├── gemm/                  ← each kernel: main.cpp + backend directories
+│   │   ├── main.cpp           ← shared test harness (backend selection)
 │   │   ├── cuda/              ← CUDA kernel + host-pointer wrapper
+│   │   ├── hip/               ← HIP kernel + host-pointer wrapper
 │   │   ├── opencl/            ← OpenCL C API implementation
 │   │   └── opencl_cpp/        ← OpenCL C++ wrapper implementation
 │   └── ...                    ← additional kernels; backend coverage is listed below
 ├── cmake/GpuKernel.cmake      ← gpu_add_kernel(): backend selection + CTest registration
-├── CMakeLists.txt             ← root build file; kernel list + USE_OPENCL / USE_OPENCL_CPP
-├── CMakePresets.json          ← configure/build/test presets (default, native, ampere, release, debug)
+├── CMakeLists.txt             ← root build file; kernel list + backend options
+├── CMakePresets.json          ← configure/build/test presets (default, native, ampere, release, debug, hip)
 ├── cuda_perf_analysis.sh      ← performance profiling script
 ├── docs/                      ← documentation index (docs/README.md) and guides
 ├── specs/                     ← dated feature packages for planned changes
@@ -229,32 +248,32 @@ The `.devcontainer/` directory defines the Docker-based CUDA environment, and
 
 ### Kernel Inventory
 
-Portable kernels under `source/` provide `cuda/`, `opencl/`, and `opencl_cpp/`
+Portable kernels under `source/` provide `cuda/`, `hip/`, `opencl/`, and `opencl_cpp/`
 implementations behind a shared `main.cpp` harness. The backends column records
 the coverage actually built today.
 
 | Kernel | Description | Backends |
 |--------|-------------|----------|
-| `gemm` | General matrix multiplication with tiled shared memory (`α·A·B + β·C`) | CUDA, OpenCL, OpenCL C++ |
-| `sigmoid` | Sigmoid activation, scalar and vectorized `float4` variants | CUDA, OpenCL, OpenCL C++; Triton |
-| `softmax` | Numerically stable softmax using a multi-stage reduction | CUDA, OpenCL, OpenCL C++ |
-| `prefix_sum` | Parallel inclusive prefix scan (Hillis–Steele) | CUDA, OpenCL, OpenCL C++ |
-| `geglu` | Gated linear unit with GELU activation, as used in Transformer FFNs | CUDA, OpenCL, OpenCL C++ |
-| `gelu` | GELU activation (`0.5·x·(1 + erf(x/√2))`) | CUDA |
-| `silu` | SiLU / Swish activation (`x·σ(x)`) | CUDA, OpenCL, OpenCL C++ |
-| `swiglu` | SwiGLU gated activation | CUDA, OpenCL, OpenCL C++ |
-| `matrix_mul` | Basic tiled matrix multiplication | CUDA, OpenCL, OpenCL C++ |
-| `matrix_transpose` | Matrix transpose using shared memory | CUDA, OpenCL, OpenCL C++ |
-| `spmv` | Sparse matrix-vector multiplication, four kernel variants | CUDA, OpenCL, OpenCL C++ |
-| `interleave_arrays` | Array interleaving (AoS ↔ SoA patterns) | CUDA, OpenCL, OpenCL C++ |
-| `reverse_array` | In-place array reversal | CUDA, OpenCL, OpenCL C++ |
-| `value_clipping` | Element-wise value clamping | CUDA, OpenCL, OpenCL C++ |
-| `rgb_to_grayscale` | RGB to grayscale conversion using Rec.601 luminance | CUDA, OpenCL, OpenCL C++ |
-| `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) | CUDA, OpenCL, OpenCL C++ |
-| `deep_learning_inference` | Small feed-forward CNN (RGBA to grayscale) with reference and candidate paths for optimization exercises | CUDA |
-| `fp16_dot_product` | FP16 dot product using packed `__half2` loads, FP32 multiply-accumulate, FP16 result | CUDA |
-| `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (LeetGPU challenge 25) | CUDA |
-| `gaussian_blur` | Naive 2D Gaussian blur with zero padding; one thread per output pixel reads every tap from global memory (LeetGPU challenge 28) | CUDA |
+| `gemm` | General matrix multiplication with tiled shared memory (`α·A·B + β·C`) | CUDA, HIP, OpenCL, OpenCL C++ |
+| `sigmoid` | Sigmoid activation, scalar and vectorized `float4` variants | CUDA, HIP, OpenCL, OpenCL C++; Triton |
+| `softmax` | Numerically stable softmax using a multi-stage reduction | CUDA, HIP, OpenCL, OpenCL C++ |
+| `prefix_sum` | Parallel inclusive prefix scan (Hillis–Steele) | CUDA, HIP, OpenCL, OpenCL C++ |
+| `geglu` | Gated linear unit with GELU activation, as used in Transformer FFNs | CUDA, HIP, OpenCL, OpenCL C++ |
+| `gelu` | GELU activation (`0.5·x·(1 + erf(x/√2))`) | CUDA, HIP |
+| `silu` | SiLU / Swish activation (`x·σ(x)`) | CUDA, HIP, OpenCL, OpenCL C++ |
+| `swiglu` | SwiGLU gated activation | CUDA, HIP, OpenCL, OpenCL C++ |
+| `matrix_mul` | Basic tiled matrix multiplication | CUDA, HIP, OpenCL, OpenCL C++ |
+| `matrix_transpose` | Matrix transpose using shared memory | CUDA, HIP, OpenCL, OpenCL C++ |
+| `spmv` | Sparse matrix-vector multiplication, four kernel variants | CUDA, HIP, OpenCL, OpenCL C++ |
+| `interleave_arrays` | Array interleaving (AoS ↔ SoA patterns) | CUDA, HIP, OpenCL, OpenCL C++ |
+| `reverse_array` | In-place array reversal | CUDA, HIP, OpenCL, OpenCL C++ |
+| `value_clipping` | Element-wise value clamping | CUDA, HIP, OpenCL, OpenCL C++ |
+| `rgb_to_grayscale` | RGB to grayscale conversion using Rec.601 luminance | CUDA, HIP, OpenCL, OpenCL C++ |
+| `convolution2d` | 2D convolution with tiled shared memory (CUDA) / naive (OpenCL) | CUDA, HIP, OpenCL, OpenCL C++ |
+| `deep_learning_inference` | Small feed-forward CNN (RGBA to grayscale) with reference and candidate paths for optimization exercises | CUDA, HIP |
+| `fp16_dot_product` | FP16 dot product using packed `__half2` loads, FP32 multiply-accumulate, FP16 result | CUDA, HIP |
+| `categorical_cross_entropy` | Numerically stable categorical cross-entropy with block reductions for row maxima and exponential sums (LeetGPU challenge 25) | CUDA, HIP |
+| `gaussian_blur` | Naive 2D Gaussian blur with zero padding; one thread per output pixel reads every tap from global memory (LeetGPU challenge 28) | CUDA, HIP |
 | `vector_addition` | Element-wise vector addition | Triton, CuTe DSL |
 
 `deep_learning_inference` needs generated weights before its first run: execute

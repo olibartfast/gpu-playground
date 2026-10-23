@@ -1,6 +1,10 @@
 #include "benchmark.h"
 #include "benchmark_helpers.h"
+#ifdef GPU_HIP_BACKEND
+#include "hip/categorical_cross_entropy.h"
+#else
 #include "cuda/categorical_cross_entropy.h"
+#endif
 
 #include <cmath>
 #include <cstddef>

@@ -1,4 +1,6 @@
-#ifdef GPU_OPENCL_CPP_BACKEND
+#if defined(GPU_HIP_BACKEND)
+#include "hip/clip.h"
+#elif defined(GPU_OPENCL_CPP_BACKEND)
 #include "opencl_cpp/clip.h"
 #elif defined(GPU_OPENCL_BACKEND)
 #include "opencl/clip.h"
@@ -75,5 +77,5 @@ int main() {
         }
     }
     std::cout << (results_match ? "Results match!" : "Results do not match!") << std::endl;
-    return 0;
+    return results_match ? 0 : 1;
 }

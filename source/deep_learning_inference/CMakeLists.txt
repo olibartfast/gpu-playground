@@ -1,11 +1,11 @@
-# The OpenCL implementation is not wired up yet; force the CUDA backend so an
+# The OpenCL implementation is not wired up yet; enable CUDA and HIP backends so an
 # OpenCL configure skips this target cleanly instead of failing on missing files.
 #
 # No CTest entry: the harness needs a user-supplied RGBA image argument. The
 # benchmark mode is not a pass/fail correctness check.
 gpu_add_kernel(deep_learning_inference
     SOURCE_NAME dnn_inference
-    BACKENDS CUDA
+    BACKENDS CUDA HIP
     EXTRA_SOURCES cuda/dnn_inference_optimized.cpp
     COMPILE_DEFINITIONS "WEIGHTS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/weights.bin\""
     COMPILE_OPTIONS

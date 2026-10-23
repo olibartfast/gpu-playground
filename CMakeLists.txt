@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.20)
 
+option(USE_HIP "Build AMD HIP backends instead of CUDA (CMake 3.21+)" OFF)
 option(USE_OPENCL     "Build OpenCL C API backends instead of CUDA"        OFF)
 option(USE_OPENCL_CPP "Build OpenCL C++ wrapper backends instead of CUDA"  OFF)
 
-if(USE_OPENCL OR USE_OPENCL_CPP)
+if((USE_HIP AND (USE_OPENCL OR USE_OPENCL_CPP)) OR (USE_OPENCL AND USE_OPENCL_CPP))
+    message(FATAL_ERROR "Select only one of USE_HIP, USE_OPENCL, USE_OPENCL_CPP")
+endif()
+
+if(USE_HIP)
+    cmake_minimum_required(VERSION 3.21)
+    project(gpu_playground VERSION 0.1.0
+        DESCRIPTION "A playground for GPU programming" LANGUAGES CXX HIP)
+    set(CMAKE_HIP_STANDARD 17)
+    set(CMAKE_HIP_STANDARD_REQUIRED ON)
+elseif(USE_OPENCL OR USE_OPENCL_CPP)
     project(gpu_playground
         VERSION 0.1.0
         DESCRIPTION "A playground for GPU programming"
@@ -34,7 +45,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-if(NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
+if(NOT USE_HIP AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
@@ -85,7 +96,7 @@ endforeach()
 
 # Python DSL backends are standalone CUDA scripts. They skip (exit 77) when an
 # optional dependency is missing, which CTest records as SKIP.
-if(BUILD_TESTING AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
+if(BUILD_TESTING AND NOT USE_HIP AND NOT USE_OPENCL AND NOT USE_OPENCL_CPP)
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_Interpreter_FOUND)
         function(gpu_add_python_test NAME SCRIPT)
