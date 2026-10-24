@@ -1,0 +1,42 @@
+N=0 FP32 ATOL=1e-5
+CPU:                   median    0.0001 ms | mean    0.0001 ms +/- 0.0001 | min    0.0000 | max    0.0004  (3 warm-up + 10 timed)
+Scalar
+GPU end-to-end:        median    0.0001 ms | mean    0.0001 ms +/- 0.0000 | min    0.0001 | max    0.0001  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0000 ms | mean    0.0000 ms +/- 0.0000 | min    0.0000 | max    0.0000  (3 warm-up + 10 timed)
+Four elements per invocation
+GPU end-to-end:        median    0.0001 ms | mean    0.0001 ms +/- 0.0000 | min    0.0001 | max    0.0001  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0000 ms | mean    0.0000 ms +/- 0.0000 | min    0.0000 | max    0.0000  (3 warm-up + 10 timed)
+N=1 FP32 ATOL=1e-5
+CPU:                   median    0.0001 ms | mean    0.0001 ms +/- 0.0000 | min    0.0001 | max    0.0001  (3 warm-up + 10 timed)
+Scalar
+OpenGL renderer: NVIDIA GeForce RTX 3060 Laptop GPU/PCIe/SSE2 | 4.3.0 NVIDIA 610.43.02
+GPU end-to-end:        median    0.0446 ms | mean    0.0476 ms +/- 0.0076 | min    0.0399 | max    0.0626  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0051 ms | mean    0.0052 ms +/- 0.0003 | min    0.0051 | max    0.0061  (3 warm-up + 10 timed)
+Four elements per invocation
+GPU end-to-end:        median    0.0465 ms | mean    0.0528 ms +/- 0.0210 | min    0.0423 | max    0.1122  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0051 ms | mean    0.0051 ms +/- 0.0000 | min    0.0051 | max    0.0051  (3 warm-up + 10 timed)
+N=257 FP32 ATOL=1e-5
+CPU:                   median    0.0022 ms | mean    0.0022 ms +/- 0.0000 | min    0.0022 | max    0.0023  (3 warm-up + 10 timed)
+Scalar
+GPU end-to-end:        median    0.0428 ms | mean    0.0461 ms +/- 0.0063 | min    0.0410 | max    0.0564  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0051 ms | mean    0.0051 ms +/- 0.0000 | min    0.0051 | max    0.0051  (3 warm-up + 10 timed)
+Four elements per invocation
+GPU end-to-end:        median    0.0553 ms | mean    0.3265 ms +/- 0.8440 | min    0.0428 | max    2.7280  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0056 ms | mean    0.0056 ms +/- 0.0005 | min    0.0051 | max    0.0061  (3 warm-up + 10 timed)
+N=1024 FP32 ATOL=1e-5
+CPU:                   median    0.0100 ms | mean    0.0109 ms +/- 0.0021 | min    0.0100 | max    0.0165  (3 warm-up + 10 timed)
+Scalar
+GPU end-to-end:        median    0.0589 ms | mean    0.2183 ms +/- 0.4915 | min    0.0463 | max    1.6161  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0051 ms | mean    0.0052 ms +/- 0.0003 | min    0.0051 | max    0.0061  (3 warm-up + 10 timed)
+Four elements per invocation
+GPU end-to-end:        median    0.0493 ms | mean    0.0520 ms +/- 0.0071 | min    0.0448 | max    0.0646  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0051 ms | mean    0.0053 ms +/- 0.0004 | min    0.0051 | max    0.0061  (3 warm-up + 10 timed)
+N=1000003 FP32 ATOL=1e-5
+CPU:                   median   11.5213 ms | mean   11.3783 ms +/- 1.3050 | min    9.4531 | max   14.0306  (3 warm-up + 10 timed)
+Scalar
+GPU end-to-end:        median   13.1305 ms | mean   13.4776 ms +/- 1.4873 | min   11.9113 | max   16.4201  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0307 ms | mean    0.0306 ms +/- 0.0009 | min    0.0297 | max    0.0328  (3 warm-up + 10 timed)
+Four elements per invocation
+GPU end-to-end:        median   13.0082 ms | mean   12.9205 ms +/- 0.9493 | min   11.3065 | max   14.1413  (3 warm-up + 10 timed)
+GPU kernel:            median    0.0369 ms | mean    0.0368 ms +/- 0.0006 | min    0.0358 | max    0.0379  (3 warm-up + 10 timed)
+Overall result: PASSED

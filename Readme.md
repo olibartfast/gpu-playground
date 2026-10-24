@@ -1,6 +1,6 @@
 # GPU Playground
 
-A collection of standalone GPU kernels written in C++/CUDA, HIP, and OpenCL, built as a
+A collection of standalone GPU kernels written in C++/CUDA, HIP, OpenCL, and GLSL, built as a
 learning and benchmarking playground. Each kernel pairs a CPU reference with one
 or more GPU backends and a shared test harness, so correctness and performance
 can be compared directly. The project is inspired by resources from the
@@ -48,8 +48,9 @@ For Python, Mojo, CUTLASS, and other frameworks, see
 
 ## Building
 
-Four backends are supported: CUDA (the default), AMD HIP (`USE_HIP`), the OpenCL
-C API (`USE_OPENCL`), and the OpenCL C++ wrapper (`USE_OPENCL_CPP`). All are driven
+Six backends are supported: CUDA (the default), AMD HIP (`USE_HIP`), the OpenCL
+C API (`USE_OPENCL`), the OpenCL C++ wrapper (`USE_OPENCL_CPP`), OpenGL compute (`USE_OPENGL`),
+and Vulkan compute (`USE_VULKAN`). GLSL coverage starts with sigmoid. All are driven
 by CMake. Select only one alternative backend at a time.
 
 ### AMD HIP
@@ -115,6 +116,25 @@ cmake --build build/opencl_cpp -j$(nproc)
 ```
 
 Both honor the same `GPU_ENABLE_*` feature flags as the CUDA build.
+
+### GLSL: OpenGL and Vulkan
+
+Both backends start with sigmoid, sharing one GLSL shader and correctness/benchmark
+harness. Each reports end-to-end and device timestamp timing separately.
+
+```bash
+cmake --preset opengl
+cmake --build --preset opengl -j4
+ctest --preset opengl
+cmake --preset vulkan
+cmake --build --preset vulkan -j4
+ctest --preset vulkan
+```
+
+See [GLSL compute backends](docs/setup/glsl-backends.md) for dependencies,
+headless execution, timing boundaries, and reproducible comparisons. Unported
+kernels skip explicitly. Binaries are under `build/opengl/source/sigmoid/` and
+`build/vulkan/source/sigmoid/`.
 
 ### Manual CMake build
 
@@ -255,7 +275,7 @@ the coverage actually built today.
 | Kernel | Description | Backends |
 |--------|-------------|----------|
 | `gemm` | General matrix multiplication with tiled shared memory (`α·A·B + β·C`) | CUDA, HIP, OpenCL, OpenCL C++ |
-| `sigmoid` | Sigmoid activation, scalar and vectorized `float4` variants | CUDA, HIP, OpenCL, OpenCL C++; Triton |
+| `sigmoid` | Sigmoid activation, scalar and vectorized `float4` variants | CUDA, HIP, OpenCL, OpenCL C++, OpenGL GLSL, Vulkan GLSL; Triton |
 | `softmax` | Numerically stable softmax using a multi-stage reduction | CUDA, HIP, OpenCL, OpenCL C++ |
 | `prefix_sum` | Parallel inclusive prefix scan (Hillis–Steele) | CUDA, HIP, OpenCL, OpenCL C++ |
 | `geglu` | Gated linear unit with GELU activation, as used in Transformer FFNs | CUDA, HIP, OpenCL, OpenCL C++ |

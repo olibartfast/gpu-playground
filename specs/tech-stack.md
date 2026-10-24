@@ -23,3 +23,8 @@ contract](../AGENTS.md).
   [the HIP backend packet](2026-10-19-hip-backend/requirements.md). HIP is not
   implemented yet; CUDA remains the default, and CUDA and OpenCL remain
   supported.
+
+- GLSL compute backends use OpenGL 4.3/EGL or Vulkan with C++17 host code.
+  Shared shader sources live in `glsl/`; API host implementations live in
+  `opengl/` and `vulkan/`. Initial coverage is sigmoid; see
+  [GLSL backend packet](2026-10-24-glsl-backends/requirements.md).

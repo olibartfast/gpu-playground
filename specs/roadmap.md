@@ -64,3 +64,11 @@ Branch: `feat/hip-backend` (proposed; not created).
 | 3 | Wave64 policy, `categorical_cross_entropy` HIP backend, device timing | Planned |
 | 4 | Documentation, CUDA/OpenCL regression, integration | Planned |
 | Future | Remaining portable kernels, GEMM via rocWMMA/MFMA, cooperative groups, CI, `gfx950`/RDNA | Deferred |
+
+## GLSL Compute Backends
+
+Specification: [GLSL backends](2026-10-24-glsl-backends/requirements.md).
+
+- Foundation: OpenGL/EGL and Vulkan build presets, shared sigmoid shader and
+  harness, CPU correctness and paired timing: implemented and validated locally.
+- Other kernel ports and device-local Vulkan staging: deferred to future increments.

@@ -1,3 +1,56 @@
+#if defined(GPU_OPENGL_BACKEND) || defined(GPU_VULKAN_BACKEND)
+#include "benchmark.h"
+#include "glsl/sigmoid.h"
+#include <cmath>
+#include <exception>
+#include <iostream>
+#include <vector>
+
+int main() {
+  try {
+    for (int n : {0, 1, 257, 1024, 1000003}) {
+      std::vector<float> input(n), reference(n), output(n);
+      for (int i = 0; i < n; ++i)
+        input[i] = float((i + 500) % 1001 - 500) * 0.1f;
+      std::cout << "N=" << n << " FP32 ATOL=1e-5\n";
+      printBench("CPU:", benchmark([&] {
+                   for (int i = 0; i < n; ++i)
+                     reference[i] = 1.0f / (1.0f + std::exp(-input[i]));
+                 }));
+      for (auto fn : {sigmoid_gpu, sigmoid2_gpu}) {
+        std::cout << (fn == sigmoid_gpu ? "Scalar\n"
+                                        : "Four elements per invocation\n");
+        auto validate = [&] {
+          for (int i = 0; i < n; ++i)
+            if (!std::isfinite(output[i]) ||
+                std::abs(output[i] - reference[i]) > 1e-5f)
+              throw std::runtime_error("Sigmoid mismatch at index " +
+                                       std::to_string(i));
+        };
+        std::fill(output.begin(), output.end(), NAN);
+        float initial_ms = 0;
+        fn(input.data(), output.data(), n, &initial_ms);
+        validate();
+        auto result = benchmarkDeviceWithReset(
+            [&] {
+              float ms = 0;
+              fn(input.data(), output.data(), n, &ms);
+              return ms;
+            },
+            [&] { std::fill(output.begin(), output.end(), NAN); });
+        validate();
+        printBench("GPU end-to-end:", result.end_to_end);
+        printBench("GPU kernel:", result.device);
+      }
+    }
+    std::cout << "Overall result: PASSED\n";
+    return 0;
+  } catch (const std::exception &error) {
+    std::cerr << "Overall result: FAILED: " << error.what() << '\n';
+    return 1;
+  }
+}
+#else
 #if defined(GPU_HIP_BACKEND)
 #include "hip/sigmoid.h"
 #elif defined(GPU_OPENCL_CPP_BACKEND)
@@ -61,3 +114,5 @@ int main()
     std::cout << "[kernel2] Results match!" << std::endl;
     return 0;
 }
+
+#endif

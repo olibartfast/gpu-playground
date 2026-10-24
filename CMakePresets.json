@@ -65,6 +65,26 @@
         "USE_HIP": "ON",
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
+    },
+    {
+      "name": "opengl",
+      "displayName": "OPENGL GLSL compute",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/opengl",
+      "cacheVariables": {
+        "USE_OPENGL": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "vulkan",
+      "displayName": "VULKAN GLSL compute",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/vulkan",
+      "cacheVariables": {
+        "USE_VULKAN": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
     }
   ],
   "buildPresets": [
@@ -91,6 +111,14 @@
     {
       "name": "hip",
       "configurePreset": "hip"
+    },
+    {
+      "name": "opengl",
+      "configurePreset": "opengl"
+    },
+    {
+      "name": "vulkan",
+      "configurePreset": "vulkan"
     }
   ],
   "testPresets": [
@@ -132,6 +160,20 @@
     {
       "name": "hip",
       "configurePreset": "hip",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "opengl",
+      "configurePreset": "opengl",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vulkan",
+      "configurePreset": "vulkan",
       "output": {
         "outputOnFailure": true
       }

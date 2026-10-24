@@ -2,14 +2,14 @@ include_guard(GLOBAL)
 
 # gpu_add_kernel(<name>
 #   [SOURCE_NAME <stem>]
-#   [BACKENDS <CUDA|HIP|OPENCL|OPENCL_CPP>...]
+#   [BACKENDS <CUDA|HIP|OPENCL|OPENCL_CPP|OPENGL|VULKAN>...]
 #   [EXTRA_SOURCES <source>...]
 #   [COMPILE_DEFINITIONS <definition>...]
 #   [COMPILE_OPTIONS <option>...]
 #   [NO_TEST]
 # )
 #
-# Adds one kernel target for the backend selected by USE_HIP / USE_OPENCL_CPP / USE_OPENCL.
+# Adds one kernel target for the backend selected by the mutually exclusive USE_* options.
 # The backend source defaults to <backend>/<name>.cpp; SOURCE_NAME overrides the
 # stem for kernels whose files use a shorter name. A backend that is not
 # implemented is skipped with a status message instead of breaking the build.
@@ -34,10 +34,14 @@ function(gpu_add_kernel NAME)
     if(ARG_BACKENDS)
         set(available_backends ${ARG_BACKENDS})
     else()
-        set(available_backends CUDA HIP OPENCL OPENCL_CPP)
+        set(available_backends CUDA HIP OPENCL OPENCL_CPP OPENGL VULKAN)
     endif()
 
-    if(USE_HIP)
+    if(USE_OPENGL)
+        set(selected_backend OPENGL)
+    elseif(USE_VULKAN)
+        set(selected_backend VULKAN)
+    elseif(USE_HIP)
         set(selected_backend HIP)
     elseif(USE_OPENCL_CPP)
         set(selected_backend OPENCL_CPP)
@@ -53,7 +57,31 @@ function(gpu_add_kernel NAME)
         return()
     endif()
 
-    if(selected_backend STREQUAL "HIP")
+    if(selected_backend STREQUAL "OPENGL" OR selected_backend STREQUAL "VULKAN")
+        string(TOLOWER "${selected_backend}" backend_dir)
+        set(backend_source "${backend_dir}/${source_stem}.cpp")
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${backend_source}")
+            message(STATUS "${NAME}: ${selected_backend} backend not implemented; skipping")
+            return()
+        endif()
+        add_executable(${NAME} main.cpp ${backend_source})
+        target_link_libraries(${NAME} PRIVATE glsl_helpers)
+        target_compile_definitions(${NAME} PRIVATE GPU_${selected_backend}_BACKEND)
+        set(shader "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${source_stem}.comp")
+        if(USE_VULKAN)
+            foreach(width 1 4)
+                set(spirv "${CMAKE_CURRENT_BINARY_DIR}/${source_stem}_${width}.spv")
+                add_custom_command(OUTPUT "${spirv}"
+                    COMMAND "${GLSLANG_VALIDATOR}" -V --target-env vulkan1.1
+                        -DWIDTH=${width} "${shader}" -o "${spirv}"
+                    DEPENDS "${shader}" VERBATIM)
+                target_sources(${NAME} PRIVATE "${spirv}")
+                target_compile_definitions(${NAME} PRIVATE GLSL_SPIRV_${width}="${spirv}")
+            endforeach()
+        else()
+            target_compile_definitions(${NAME} PRIVATE GLSL_SOURCE="${shader}")
+        endif()
+    elseif(selected_backend STREQUAL "HIP")
         set(backend_source "hip/${source_stem}.cpp")
         if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${backend_source}")
             message(STATUS "${NAME}: HIP backend not implemented; skipping")

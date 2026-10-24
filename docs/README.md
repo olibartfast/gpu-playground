@@ -12,6 +12,9 @@ New to the repository? Start with the [project README](../Readme.md), then
 
 ## Setup
 
+- [GLSL compute backends](setup/glsl-backends.md) — headless OpenGL and Vulkan,
+  shared shaders, correctness checks, and benchmark comparisons.
+
 - [Running on AMD Developer Cloud](setup/amd-developer-cloud.md) — SSH, ROCm inspection,
   HIP build, correctness tests, benchmarks, and result collection.
 - [Building on Google Colab](setup/google-colab.md) — build and run the

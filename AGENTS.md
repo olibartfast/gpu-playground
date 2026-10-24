@@ -1,6 +1,6 @@
 # Agent Instructions
 
-This repository is a GPU kernel playground for CUDA, HIP, and OpenCL experiments. The agentic workflow here is intentionally lightweight: use the repo docs as the operating contract, make changes that stay local to the requested kernel or docs task, and validate performance or correctness claims before presenting them as finished.
+This repository is a GPU kernel playground for CUDA, HIP, OpenCL, and GLSL experiments. The agentic workflow here is intentionally lightweight: use the repo docs as the operating contract, make changes that stay local to the requested kernel or docs task, and validate performance or correctness claims before presenting them as finished.
 
 ## Goal
 
@@ -31,6 +31,9 @@ Build, study, and improve standalone GPU kernels without breaking the backend sp
   - AMD HIP code in `source/<kernel>/hip/` (`USE_HIP=ON`, preset `hip`)
   - OpenCL C API code in `source/<kernel>/opencl/`
   - OpenCL C++ wrapper code in `source/<kernel>/opencl_cpp/`
+  - OpenGL compute host code in `source/<kernel>/opengl/` (`USE_OPENGL=ON`, preset `opengl`)
+  - Vulkan compute host code in `source/<kernel>/vulkan/` (`USE_VULKAN=ON`, preset `vulkan`)
+  - Shared GLSL compute shaders in `source/<kernel>/glsl/`; see `docs/setup/glsl-backends.md`
   - Optional Python DSL backends in `source/<kernel>/python/<dsl>/<kernel>.py`,
     `<dsl>` ∈ `triton`, `cute-dsl`. These are standalone scripts, not CMake
     targets, and a kernel may be Python-only (e.g. `vector_addition`).
@@ -76,7 +79,7 @@ ctest --preset hip
 ```
 
 See `docs/setup/amd-developer-cloud.md` for remote AMD execution. Backend options
-`USE_HIP`, `USE_OPENCL`, and `USE_OPENCL_CPP` are mutually exclusive.
+`USE_HIP`, `USE_OPENCL`, `USE_OPENCL_CPP`, `USE_OPENGL`, and `USE_VULKAN` are mutually exclusive.
 
 OpenCL C++ wrapper:
 
