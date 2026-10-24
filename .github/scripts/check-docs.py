@@ -23,7 +23,7 @@ HEADER_RE = re.compile(
     r"· Last reviewed: (?P<reviewed>\d{4}-\d{2})$"
 )
 ALLOWED_AUDIENCE = {"humans", "agents"}
-ALLOWED_APPLIES = {"all", "CUDA", "OpenCL"}
+ALLOWED_APPLIES = {"all", "CUDA", "OpenCL", "OpenGL", "Vulkan"}
 
 
 def tracked_docs() -> list[Path]:
